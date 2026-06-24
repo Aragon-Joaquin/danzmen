@@ -6,17 +6,18 @@ the idea is:
 - yes, im using this cuz pen and paper is too hard
 
 ```toml
-schedule.start = "sunday"
+#weekend starts on sunday
+start = "sunday"
 
 # each Monday
-[monday]
+[day.monday]
 tasks = [ "run 500km", "read the man pages" ]
 
 # starting from Monday, every 2 days until Friday
 [loop.2d]
+tasks = ["goto gym"] # Monday, Wednesday, Friday
 start = "monday"
 end = "friday"
-tasks = ["goto gym"] # Monday, Wednesday, Friday
 
 [loop.1w] # 1 week
 tasks = ["shower"] # every week, starting from Sunday
@@ -25,13 +26,18 @@ tasks = ["shower"] # every week, starting from Sunday
 #ERROR: cannot loop if the loop is greater than the difference between days/weeks
 # from Monday to Tuesday there's a 1 day and its declare to repeat each 4 days
 [loop.4d]
+tasks = ["this is an invalid format"]
 start = "monday"
-tasks = ["this an invalid format"]
 end = "tuesday" 
+
+# everyday!
+[loop.1d] 
+tasks = ["live"]
 ```
 
 for now, the .config file is subject to changes since im horrible at naming things.
 
 ## todo: 
 - [ ] sqlite
+- [ ] make different list delegates (simple and check)
 - [ ] everything else
