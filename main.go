@@ -20,22 +20,33 @@ func main() {
 
 	// op, err := ParseFlagOption()
 
+	//TODO: make this into a db package so then i can use the types in tui/
+	_, err = initDB()
+	if err != nil {
+		panic(err)
+	}
+
 	// NOTE: "packing" the items
 	day := ty.ValidateDayOfTheWeek(time.Now().Weekday().String())
-	itemsToRender := []list.Item{}
+	itemsToRender := []list.Item{
+		tui.CreateDZItem("Task A", true),
+		tui.CreateDZItem("Task B", false),
+		tui.CreateDZItem("Task C", false),
+		tui.CreateDZItem("Task ...", true),
+	}
 
 	for k, v := range cfg.Day {
 		if k != day {
 			continue
 		}
 		log.Println(k, ": ", v)
-		for _, title := range v.Tasks {
-			itemsToRender = append(itemsToRender, tui.CreateDZItem(title))
+		for range v.Tasks {
+			itemsToRender = append(itemsToRender, itemsToRender...)
 		}
 	}
 
 	//NOTE: start painting UI
-	model := tui.CreateTUIModel(itemsToRender)
+	model := tui.CreateTUIModel(itemsToRender, tui.NewSimpleStyle())
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		log.Panicf("Error running program: %e \n", err)

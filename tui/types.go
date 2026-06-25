@@ -1,15 +1,16 @@
 package tui
 
 type DZItem struct {
-	title string
+	title     string
+	completed bool
 }
 
-func CreateDZItem(t string) DZItem {
+func CreateDZItem(t string, c bool) DZItem {
 	return DZItem{
-		title: t,
+		title:     t,
+		completed: c,
 	}
 }
 
 func (i DZItem) Title() string       { return i.title }
-func (i DZItem) Description() string { return i.title }
 func (i DZItem) FilterValue() string { return i.title }

@@ -7,16 +7,29 @@ import (
 )
 
 type tuiModel struct {
-	list list.Model
+	list  list.Model
+	style styles
 }
 
-func CreateTUIModel(i []list.Item) tuiModel {
-	l := list.New(i, list.NewDefaultDelegate(), 0, 0)
-	l.Title = "Tasks pending today"
+const (
+	defaultWidth = 20
+	listHeight   = 14
+)
 
-	return tuiModel{
-		list: l,
-	}
+func CreateTUIModel(i []list.Item, s styles) tuiModel {
+	l := list.New(i, dzDelegate{&s}, defaultWidth, listHeight)
+
+	l.SetShowTitle(true)
+	l.SetFilteringEnabled(true)
+	l.SetShowStatusBar(false)
+
+	l.Title = "Tasks pending today"
+	l.InfiniteScrolling = true
+	l.Styles.Title = lipgloss.NewStyle()
+
+	mTui := tuiModel{list: l, style: s}
+	mTui.updateStyles(s)
+	return mTui
 }
 
 func (m tuiModel) Init() tea.Cmd {
@@ -25,24 +38,41 @@ func (m tuiModel) Init() tea.Cmd {
 
 func (m tuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		if msg.String() == "ctrl+c" {
-			return m, tea.Quit
-		}
 	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
+		m.list.SetWidth(msg.Width)
+	case tea.KeyPressMsg:
+
+		switch k := msg.String(); k {
+		case "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			_, ok := m.list.SelectedItem().(DZItem)
+
+			if !ok {
+				break
+			}
+
+		}
 	}
 
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
-	return m, cmd
+	var cmd tea.BatchMsg
+	l, c := m.list.Update(msg)
+	m.list = l
+	cmd = append(cmd, c)
+	return m, tea.Batch(cmd...)
 }
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
-
 func (m tuiModel) View() tea.View {
-	v := tea.NewView(docStyle.Render(m.list.View()))
+	v := tea.NewView(m.list.View())
 	v.AltScreen = true
 	return v
+}
+
+// NOTE: private
+func (m tuiModel) updateStyles(s styles) {
+	m.style = s
+	m.list.Styles.Title = m.style.title
+	m.list.Styles.PaginationStyle = m.style.pagination
+	m.list.Styles.HelpStyle = m.style.help
+	m.list.SetDelegate(dzDelegate{styles: &m.style})
 }
