@@ -1,14 +1,30 @@
 package tui
 
+import "danzmen/db"
+
 type DZItem struct {
+	id        int
 	title     string
 	completed bool
 }
 
-func CreateDZItem(t string, c bool) DZItem {
+func CreateMultipleDZItem(d ...*db.DBJoin_DateRecord_Tasks) []DZItem {
+	dzitem := make([]DZItem, len(d))
+	for i, v := range d {
+		dzitem[i] = DZItem{
+			id:        v.DBTask.Id,
+			title:     v.DBTask.Name,
+			completed: v.Completed.IsCompleted(),
+		}
+
+	}
+	return dzitem
+}
+func CreateDZItem(d *db.DBJoin_DateRecord_Tasks) DZItem {
 	return DZItem{
-		title:     t,
-		completed: c,
+		id:        d.DBTask.Id,
+		title:     d.DBTask.Name,
+		completed: d.Completed.IsCompleted(),
 	}
 }
 

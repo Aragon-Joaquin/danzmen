@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"danzmen/db"
+
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -8,6 +10,7 @@ import (
 
 type tuiModel struct {
 	list  list.Model
+	db    *db.SqliteDB
 	style styles
 }
 
@@ -16,7 +19,7 @@ const (
 	listHeight   = 14
 )
 
-func CreateTUIModel(i []list.Item, s styles) tuiModel {
+func CreateTUIModel(i []list.Item, db *db.SqliteDB, s styles) tuiModel {
 	l := list.New(i, dzDelegate{&s}, defaultWidth, listHeight)
 
 	l.SetShowTitle(true)
@@ -27,12 +30,13 @@ func CreateTUIModel(i []list.Item, s styles) tuiModel {
 	l.InfiniteScrolling = true
 	l.Styles.Title = lipgloss.NewStyle()
 
-	mTui := tuiModel{list: l, style: s}
+	mTui := tuiModel{list: l, style: s, db: db}
 	mTui.updateStyles(s)
 	return mTui
 }
 
 func (m tuiModel) Init() tea.Cmd {
+	m.list.Items()
 	return nil
 }
 

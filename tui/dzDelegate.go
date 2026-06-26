@@ -27,7 +27,7 @@ func (d dzDelegate) Render(w io.Writer, m list.Model, idx int, listItem list.Ite
 		checked = "x"
 	}
 
-	str := fmt.Sprintf("%d) [%s] %s", idx+1, checked, i.Title())
+	str := fmt.Sprintf("%d) [%s] %s", i.id, checked, i.Title())
 
 	fn := d.styles.item.Render
 	if idx == m.Index() {

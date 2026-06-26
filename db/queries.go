@@ -1,4 +1,4 @@
-package main
+package db
 
 import (
 	"context"
@@ -31,6 +31,11 @@ type DBDate_Record struct {
 	Completed DBComplete
 }
 
+type DBJoin_DateRecord_Tasks struct {
+	*DBTask
+	*DBDate_Record
+}
+
 // NOTE: repository
 func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 	q := `insert into tasks(name) values (?) returning id,name;`
@@ -55,7 +60,7 @@ func (s *SqliteDB) UpdateCompletedTask(id int, c DBComplete) error {
 	return err
 }
 
-func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]DBTask, error) {
+func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_Tasks, error) {
 	ctx := context.Background()
 	tx, err := s.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -69,7 +74,6 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]DBTask, error) {
 			//do something here... or maybe not
 			continue
 		}
-
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -78,21 +82,29 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]DBTask, error) {
 
 	//NOTE: SELECT QUERY
 	q2 := fmt.Sprintf(`
-	select * from tasks 
-	where name in (?%s) 
-	returning id, name;`, strings.Repeat(", ?", len(names)-1))
+	select 
+	t.id as t_id, t.name as t_name,
+	d.date as d_date, d.task_id as d_taskid, d.completed as d_completed
+	from tasks t
+	left join date_record d on d.task_id = t.id
+	where name in (?%s);`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
-	for i, v := range names {
-		args[i] = v
+	for range names {
+		args = append(args, names)
 	}
 
 	r, err := s.QueryContext(ctx, q2, args...)
 
-	res := make([]DBTask, len(names))
+	res := make([]*DBJoin_DateRecord_Tasks, len(names))
 	for r.Next() {
-		t := DBTask{}
-		if err := r.Scan(&t.Id, &t.Name); err != nil {
+		t := &DBJoin_DateRecord_Tasks{}
+		t.DBTask = &DBTask{}
+		t.DBDate_Record = &DBDate_Record{}
+
+		if err := r.Scan(
+			&t.DBTask.Id, &t.DBTask.Name,
+			&t.DBDate_Record.Date, &t.DBDate_Record.TaskId, &t.DBDate_Record.Completed); err != nil {
 			return nil, err
 		}
 		res = append(res, t)

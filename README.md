@@ -1,3 +1,11 @@
+
+#### todo: 
+- [x] sqlite
+- [x] make different list delegates (simple and check)
+- [ ] make a streak tui 
+- [ ] add support for date specific tasks (however it isn't the purpose of this)
+
+## danzmen
 more like a tui daily agenda using a .toml config file.
 
 the idea is:
@@ -6,7 +14,7 @@ the idea is:
 - yes, im using this cuz pen and paper is too hard
 
 ```toml
-#weekend starts on sunday
+#week starts on sunday
 start = "sunday"
 
 # each Monday
@@ -37,7 +45,3 @@ tasks = ["live"]
 
 for now, the .config file is subject to changes since im horrible at naming things.
 
-## todo: 
-- [ ] sqlite
-- [ ] make different list delegates (simple and check)
-- [ ] everything else

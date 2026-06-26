@@ -1,7 +1,8 @@
-package main
+package db
 
 import (
 	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 	"os"
 	"path/filepath"
 )
@@ -10,7 +11,7 @@ type SqliteDB struct {
 	*sql.DB
 }
 
-func initDB() (*SqliteDB, error) {
+func Init() (*SqliteDB, error) {
 	homePath, err := os.UserHomeDir()
 	if err != nil {
 		return nil, err

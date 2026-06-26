@@ -2,6 +2,7 @@ package main
 
 import (
 	"danzmen/config"
+	"danzmen/db"
 	"danzmen/tui"
 	ty "danzmen/types"
 	"log"
@@ -21,32 +22,55 @@ func main() {
 	// op, err := ParseFlagOption()
 
 	//TODO: make this into a db package so then i can use the types in tui/
-	_, err = initDB()
+	sdb, err := db.Init()
 	if err != nil {
 		panic(err)
 	}
 
 	// NOTE: "packing" the items
 	day := ty.ValidateDayOfTheWeek(time.Now().Weekday().String())
-	itemsToRender := []list.Item{
-		tui.CreateDZItem("Task A", true),
-		tui.CreateDZItem("Task B", false),
-		tui.CreateDZItem("Task C", false),
-		tui.CreateDZItem("Task ...", true),
-	}
 
+	var names []string
 	for k, v := range cfg.Day {
 		if k != day {
 			continue
 		}
 		log.Println(k, ": ", v)
 		for range v.Tasks {
-			itemsToRender = append(itemsToRender, itemsToRender...)
+			names = append(names, v.Tasks...)
+		}
+	}
+
+	//call the db to obtain the values
+	dbTasks := []*db.DBJoin_DateRecord_Tasks{}
+	if len(names) > 0 {
+		dbTasks, err = sdb.CreateIfNotExistsTasks(names)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+
+	itemsToRender := []list.Item{
+		// tui.CreateDZItem(&db.DBJoin_DateRecord_Tasks{
+		// 	DBTask: &db.DBTask{
+		// 		Id:   19,
+		// 		Name: "hi",
+		// 	},
+		// 	DBDate_Record: &db.DBDate_Record{
+		// 		Completed: 1,
+		// 	},
+		// }),
+	}
+
+	if len(dbTasks) > 0 {
+		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
+			itemsToRender = append(itemsToRender, v)
 		}
 	}
 
 	//NOTE: start painting UI
-	model := tui.CreateTUIModel(itemsToRender, tui.NewSimpleStyle())
+	model := tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle())
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		log.Panicf("Error running program: %e \n", err)
