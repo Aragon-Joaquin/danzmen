@@ -2,6 +2,15 @@ package tui
 
 import "danzmen/db"
 
+// different modes
+
+type RENDER_MODE int
+
+const (
+	RENDER_TUI RENDER_MODE = iota
+	RENDER_ONCE
+)
+
 type DZItem struct {
 	id        int
 	title     string

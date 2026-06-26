@@ -51,17 +51,7 @@ func main() {
 		panic(err)
 	}
 
-	itemsToRender := []list.Item{
-		// tui.CreateDZItem(&db.DBJoin_DateRecord_Tasks{
-		// 	DBTask: &db.DBTask{
-		// 		Id:   19,
-		// 		Name: "hi",
-		// 	},
-		// 	DBDate_Record: &db.DBDate_Record{
-		// 		Completed: 1,
-		// 	},
-		// }),
-	}
+	itemsToRender := []list.Item{}
 
 	if len(dbTasks) > 0 {
 		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
@@ -70,6 +60,10 @@ func main() {
 	}
 
 	//NOTE: start painting UI
+
+	// TODO: if the flag "list" is provided, only output by using raw lipgloss with an fmt.Println to stdout
+	// or i can use these? tea.WithInput(nil), tea.WithoutRenderer()
+
 	model := tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle())
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {

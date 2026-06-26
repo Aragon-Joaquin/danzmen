@@ -10,8 +10,8 @@ import (
 type DBComplete int
 
 const (
-	completed_no  DBComplete = 0
-	completed_yes DBComplete = 1
+	Completed_NO  DBComplete = 0
+	Completed_YES DBComplete = 1
 )
 
 func (c DBComplete) IsCompleted() bool {
@@ -39,7 +39,7 @@ type DBJoin_DateRecord_Tasks struct {
 // NOTE: repository
 func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 	q := `insert into tasks(name) values (?) returning id,name;`
-	r := s.QueryRowContext(context.Background(), q, name)
+	r := s.db.QueryRowContext(context.Background(), q, name)
 
 	if err := r.Err(); err != nil {
 		return nil, err
@@ -53,16 +53,16 @@ func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 func (s *SqliteDB) UpdateCompletedTask(id int, c DBComplete) error {
 	q := `
 	update date_record set completed = ?
-	where id = ?;
+	where task_id = ?;
 	`
 
-	_, err := s.ExecContext(context.Background(), q, c.ToInt(), id)
+	_, err := s.db.ExecContext(context.Background(), q, c.ToInt(), id)
 	return err
 }
 
 func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_Tasks, error) {
 	ctx := context.Background()
-	tx, err := s.BeginTx(ctx, &sql.TxOptions{})
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 		args = append(args, names)
 	}
 
-	r, err := s.QueryContext(ctx, q2, args...)
+	r, err := s.db.QueryContext(ctx, q2, args...)
 
 	res := make([]*DBJoin_DateRecord_Tasks, len(names))
 	for r.Next() {

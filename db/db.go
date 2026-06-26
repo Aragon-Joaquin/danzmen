@@ -8,7 +8,7 @@ import (
 )
 
 type SqliteDB struct {
-	*sql.DB
+	db *sql.DB
 }
 
 func Init() (*SqliteDB, error) {
@@ -23,7 +23,7 @@ func Init() (*SqliteDB, error) {
 		return nil, err
 	}
 
-	db, err := sql.Open("sqlite3", "./danzmen.db")
+	db, err := sql.Open("sqlite3", filepath.Join(dir, "danzmen.db"))
 	if err != nil {
 		return nil, err
 	}
@@ -38,12 +38,7 @@ func Init() (*SqliteDB, error) {
 }
 
 func (s *SqliteDB) createDatabase() error {
-	tx, err := s.Begin()
-	if err != nil {
-		return err
-	}
-
-	stmt, err := tx.Prepare(`
+	_, err := s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS tasks(
 		id integer PRIMARY KEY autoincrement not null,
 		name varchar(64) not null unique
@@ -55,14 +50,6 @@ func (s *SqliteDB) createDatabase() error {
 		completed integer not null check (completed IN (0, 1)) default (0),
 		PRIMARY KEY (date, task_id)
 		FOREIGN KEY(task_id) REFERENCES tasks(id)
-	);
-	`)
-
-	if err != nil {
-		return err
-	}
-
-	defer stmt.Close()
-
-	return tx.Commit()
+	);`)
+	return err
 }

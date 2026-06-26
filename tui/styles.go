@@ -16,9 +16,9 @@ type styles struct {
 
 func NewSimpleStyle() styles {
 	var s styles
-	s.title = lipgloss.NewStyle().MarginLeft(2)
-	s.item = lipgloss.NewStyle().PaddingLeft(4)
-	s.selectedItem = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("170"))
+	s.title = lipgloss.NewStyle().Margin(1, 2, 0, 0).Padding(0, 1).Foreground(lipgloss.Yellow).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Yellow)
+	s.item = lipgloss.NewStyle()
+	s.selectedItem = lipgloss.NewStyle().Foreground(lipgloss.Yellow)
 	s.pagination = list.DefaultStyles(false).PaginationStyle.PaddingLeft(4)
 	s.help = list.DefaultStyles(false).HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	s.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
