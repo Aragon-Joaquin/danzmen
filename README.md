@@ -17,6 +17,7 @@
 
 - [ ] finish loop.*d tasks
 - [ ] show tasks as horizontal
+- [ ] parse the tasks from the toml to lowercase (make them case insensitive)
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.
