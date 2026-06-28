@@ -6,6 +6,7 @@
 - [ ] add support for date specific tasks (however it isn't the purpose of this)
 - [x] on selectOrCreate query dont increment id if it failed silently
 - [ ] make the flags on main more easily manageable
+- [ ] make height be same as the list height IF list.height() < MAX_HEIGHT
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.
