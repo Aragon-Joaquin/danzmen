@@ -4,6 +4,7 @@
 - [x] make different list delegates (simple and check)
 - [ ] make a streak tui 
 - [ ] add support for date specific tasks (however it isn't the purpose of this)
+- [ ] on selectOrCreate query dont increment id if it failed silently
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.
