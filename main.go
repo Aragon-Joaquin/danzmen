@@ -3,9 +3,11 @@ package main
 import (
 	"danzmen/config"
 	"danzmen/db"
+	"danzmen/flags"
 	"danzmen/tui"
 	ty "danzmen/types"
 	"log"
+	"os"
 	"time"
 
 	"charm.land/bubbles/v2/list"
@@ -14,15 +16,19 @@ import (
 )
 
 func main() {
-	cfg, err := config.ParseTOML()
+	//NOTE: flag parsing
+	f, err := flags.ParseOptions()
 	if err != nil {
-		panic(err)
+		log.Println(err.Error())
+		os.Exit(1)
 	}
 
-	// op, err := ParseFlagOption()
+	if f.Type == flags.PROGRAM_HELP {
+		return
+	}
 
-	//TODO: make this into a db package so then i can use the types in tui/
-	sdb, err := db.Init()
+	//toml
+	cfg, err := config.ParseTOML()
 	if err != nil {
 		panic(err)
 	}
@@ -35,13 +41,17 @@ func main() {
 		if k != day {
 			continue
 		}
-		log.Println(k, ": ", v)
 		for range v.Tasks {
 			names = append(names, v.Tasks...)
 		}
 	}
 
-	//call the db to obtain the values
+	//NOTE: call the db to obtain the values
+	sdb, err := db.Init()
+	if err != nil {
+		panic(err)
+	}
+
 	dbTasks := []*db.DBJoin_DateRecord_Tasks{}
 	if len(names) > 0 {
 		dbTasks, err = sdb.CreateIfNotExistsTasks(names)
@@ -52,7 +62,6 @@ func main() {
 	}
 
 	itemsToRender := []list.Item{}
-
 	if len(dbTasks) > 0 {
 		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
 			itemsToRender = append(itemsToRender, v)
@@ -60,11 +69,19 @@ func main() {
 	}
 
 	//NOTE: start painting UI
-
 	// TODO: if the flag "list" is provided, only output by using raw lipgloss with an fmt.Println to stdout
-	// or i can use these? tea.WithInput(nil), tea.WithoutRenderer()
 
-	model := tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle())
+	var model tui.TuiModel
+	switch f.Type {
+	case flags.PROGRAM_CHECK:
+		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), false)
+	case flags.PROGRAM_LIST:
+		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), true)
+
+	default:
+		panic("invalid option")
+	}
+
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		log.Panicf("Error running program: %e \n", err)

@@ -41,7 +41,7 @@ func (s *SqliteDB) createDatabase() error {
 	_, err := s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS tasks(
 		id integer PRIMARY KEY autoincrement not null,
-		name varchar(64) not null unique
+		name text not null unique
 	);
 
 	CREATE TABLE IF NOT EXISTS date_record(

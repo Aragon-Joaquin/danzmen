@@ -29,12 +29,7 @@ func (d dzDelegate) Render(w io.Writer, m list.Model, idx int, listItem list.Ite
 	}
 
 	//NOTE: imagine this is a ternary
-	var checked = " "
-	if i.completed {
-		checked = "x"
-	}
-
-	str := fmt.Sprintf("[%s] %s", checked, i.Title())
+	str := i.Title()
 	id := id_block.Inline(true).Render(fmt.Sprintf("%d) ", i.id))
 
 	//NOTE: select item

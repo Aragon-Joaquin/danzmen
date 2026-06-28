@@ -7,19 +7,6 @@ import (
 	"strings"
 )
 
-type DBComplete int
-
-const (
-	Completed_NO  DBComplete = 0
-	Completed_YES DBComplete = 1
-)
-
-func (c DBComplete) IsCompleted() bool {
-	return c == 1
-}
-
-func (c DBComplete) ToInt() int { return int(c) }
-
 // NOTE: tables
 type DBTask struct {
 	Id   int
@@ -28,7 +15,7 @@ type DBTask struct {
 type DBDate_Record struct {
 	Date      string
 	TaskId    int
-	Completed DBComplete
+	Completed int
 }
 
 type DBJoin_DateRecord_Tasks struct {
@@ -38,25 +25,45 @@ type DBJoin_DateRecord_Tasks struct {
 
 // NOTE: repository
 func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
-	q := `insert into tasks(name) values (?) returning id,name;`
-	r := s.db.QueryRowContext(context.Background(), q, name)
+	ctx := context.Background()
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+
+	defer tx.Rollback()
+
+	if err != nil {
+		return nil, err
+	}
+
+	q1 := `insert into tasks(name) values (?) returning id,name;`
+	r := tx.QueryRowContext(ctx, q1, name)
 
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
 
 	t := &DBTask{}
-	err := r.Scan(&t.Id, &t.Name)
-	return t, err
+	if err := r.Scan(&t.Id, &t.Name); err != nil {
+		return nil, err
+	}
+
+	q2 := `insert into date_record(task_id) values (?);`
+	if _, err := tx.ExecContext(ctx, q2, t.Id); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
-func (s *SqliteDB) UpdateCompletedTask(id int, c DBComplete) error {
+func (s *SqliteDB) UpdateCompletedTask(id int, completed int) error {
 	q := `
-	update date_record set completed = ?
-	where task_id = ?;
+	update date_record set completed = ? where task_id = ?;
 	`
 
-	_, err := s.db.ExecContext(context.Background(), q, c.ToInt(), id)
+	_, err := s.db.ExecContext(context.Background(), q, completed, id)
 	return err
 }
 
@@ -67,36 +74,48 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 		return nil, err
 	}
 
+	defer tx.Rollback()
+
 	//NOTE: INSERT
+	q1 := `insert into tasks(name) values(?) on conflict do nothing returning id;`
+	q2 := `insert into date_record(task_id) values(?);`
+
 	for _, s := range names {
-		q1 := `insert into tasks(name) values(?) on conflict do nothing;`
-		if _, err := tx.ExecContext(ctx, q1, s); err != nil {
-			//do something here... or maybe not
+		var t_id int
+		if err := tx.QueryRowContext(ctx, q1, s).Scan(&t_id); err != nil {
 			continue
+		}
+
+		if _, err := tx.ExecContext(ctx, q2, t_id); err != nil {
+			return nil, err
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
 	//NOTE: SELECT QUERY
-	q2 := fmt.Sprintf(`
+	q3 := fmt.Sprintf(`
 	select 
 	t.id as t_id, t.name as t_name,
-	d.date as d_date, d.task_id as d_taskid, d.completed as d_completed
+	coalesce(d.date, "") as d_date, d.task_id as d_taskid, d.completed as d_completed
 	from tasks t
 	left join date_record d on d.task_id = t.id
 	where name in (?%s);`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
-	for range names {
-		args = append(args, names)
+	for _, n := range names {
+		args = append(args, n)
 	}
 
-	r, err := s.db.QueryContext(ctx, q2, args...)
+	r, err := s.db.QueryContext(ctx, q3, args...)
+	if err != nil {
+		return nil, err
+	}
 
-	res := make([]*DBJoin_DateRecord_Tasks, len(names))
+	res := []*DBJoin_DateRecord_Tasks{}
 	for r.Next() {
 		t := &DBJoin_DateRecord_Tasks{}
 		t.DBTask = &DBTask{}

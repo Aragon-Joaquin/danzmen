@@ -24,3 +24,32 @@ func NewSimpleStyle() styles {
 	s.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
 	return s
 }
+
+func CreateListModel(i []list.Item, s styles) list.Model {
+	l := list.New(i, dzDelegate{s}, DEFAULT_WIDTH+2, LIST_HEIGHT+2)
+
+	l.SetShowTitle(true)
+	l.SetFilteringEnabled(true)
+	l.SetShowStatusBar(false)
+
+	//TODO: make my own
+	l.SetShowHelp(false)
+
+	l.Title = "Tasks pending today"
+	l.SetShowTitle(true)
+	l.InfiniteScrolling = true
+	return updateListStyles(&l, s)
+}
+
+// NOTE: private
+func updateListStyles(list *list.Model, s styles) list.Model {
+	l := list
+	l.Styles.NoItems = l.Styles.NoItems.
+		MarginLeft(4)
+
+	l.Styles.Title = s.title
+	l.Styles.PaginationStyle = s.pagination
+	l.Styles.HelpStyle = s.help
+	l.SetDelegate(dzDelegate{styles: s})
+	return *l
+}
