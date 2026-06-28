@@ -40,7 +40,7 @@ func Init() (*SqliteDB, error) {
 func (s *SqliteDB) createDatabase() error {
 	_, err := s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS tasks(
-		id integer PRIMARY KEY autoincrement not null,
+		id integer PRIMARY KEY,
 		name text not null unique
 	);
 

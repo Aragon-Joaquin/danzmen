@@ -5,6 +5,13 @@ import (
 	"strings"
 )
 
+func DBIntToBool(i int) bool {
+	if i == 1 {
+		return true
+	}
+	return false
+}
+
 type DAYS_PER_WEEK string
 
 const (

@@ -14,7 +14,7 @@ type TuiModel struct {
 	db    *db.SqliteDB
 	style styles
 
-	quitImmediatly bool
+	quitImmediately bool
 
 	w int
 	h int
@@ -22,24 +22,23 @@ type TuiModel struct {
 
 const (
 	DEFAULT_WIDTH = 50
-	LIST_HEIGHT   = 14
+	LIST_HEIGHT   = 8
 )
 
 func CreateTUIModel(i []list.Item, db *db.SqliteDB, s styles, q bool) TuiModel {
+	d := &DzDelegateOpts{QuitImmediately: q, RenderCompletes: !q}
 	mTui := TuiModel{
-		list:           CreateListModel(i, s),
-		style:          s,
-		db:             db,
-		quitImmediatly: q,
+		list:            CreateListModel(i, s, d),
+		style:           s,
+		db:              db,
+		quitImmediately: q,
 	}
 
 	return mTui
 }
 
-type triggerQuitMsg struct{}
-
 func (m TuiModel) Init() tea.Cmd {
-	if m.quitImmediatly {
+	if m.quitImmediately {
 		return tea.Quit
 	}
 	return nil
@@ -56,7 +55,7 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch k := msg.String(); k {
 		case "ctrl+c":
 			return m, tea.Quit
-		case "enter":
+		case "enter", "space":
 			i, ok := m.list.SelectedItem().(DZItem)
 
 			if !ok {
@@ -88,21 +87,16 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 var (
 	container = lipgloss.
-			NewStyle().
-			Height(LIST_HEIGHT).
-			MaxHeight(LIST_HEIGHT)
-
-	tasks_completed = lipgloss.NewStyle().
-			AlignHorizontal(lipgloss.Center).
-			Height(LIST_HEIGHT).
-			Padding(2, 5)
+		NewStyle().
+		Height(LIST_HEIGHT).
+		MaxHeight(LIST_HEIGHT)
 )
 
 func (m TuiModel) View() tea.View {
-	c := container.Width(m.w)
+	c := container.Width(m.w).Margin(0).Padding(0)
 
 	v := tea.NewView(c.Render(m.list.View()))
-	if !m.quitImmediatly {
+	if !m.quitImmediately {
 		v.AltScreen = true
 	}
 	return v

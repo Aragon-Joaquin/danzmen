@@ -34,7 +34,7 @@ func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 		return nil, err
 	}
 
-	q1 := `insert into tasks(name) values (?) returning id,name;`
+	q1 := `insert into tasks(id, name) values (NULL, ?) returning id,name;`
 	r := tx.QueryRowContext(ctx, q1, name)
 
 	if err := r.Err(); err != nil {
@@ -77,7 +77,7 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 	defer tx.Rollback()
 
 	//NOTE: INSERT
-	q1 := `insert into tasks(name) values(?) on conflict do nothing returning id;`
+	q1 := `insert or ignore into tasks(id, name) values(NULL, ?) returning id;`
 	q2 := `insert into date_record(task_id) values(?);`
 
 	for _, s := range names {
@@ -103,7 +103,7 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 	coalesce(d.date, "") as d_date, d.task_id as d_taskid, d.completed as d_completed
 	from tasks t
 	left join date_record d on d.task_id = t.id
-	where name in (?%s);`, strings.Repeat(", ?", len(names)-1))
+	where name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
 	for _, n := range names {

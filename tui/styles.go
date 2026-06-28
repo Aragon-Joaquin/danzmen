@@ -18,25 +18,28 @@ func NewSimpleStyle() styles {
 	var s styles
 	s.title = lipgloss.NewStyle().Margin(1, 2, 0, 0).Padding(0, 1).Foreground(lipgloss.Yellow).Border(lipgloss.RoundedBorder()).BorderForeground(lipgloss.Yellow)
 	s.item = lipgloss.NewStyle()
-	s.selectedItem = lipgloss.NewStyle().Foreground(lipgloss.Yellow)
+	s.selectedItem = lipgloss.NewStyle()
 	s.pagination = list.DefaultStyles(false).PaginationStyle.PaddingLeft(4)
 	s.help = list.DefaultStyles(false).HelpStyle.PaddingLeft(4).PaddingBottom(1)
 	s.quitText = lipgloss.NewStyle().Margin(1, 0, 2, 4)
 	return s
 }
 
-func CreateListModel(i []list.Item, s styles) list.Model {
-	l := list.New(i, dzDelegate{s}, DEFAULT_WIDTH+2, LIST_HEIGHT+2)
+func CreateListModel(i []list.Item, s styles, o *DzDelegateOpts) list.Model {
+	dz := dzDelegate{styles: s}
+	dz.SetOpts(o)
 
-	l.SetShowTitle(true)
-	l.SetFilteringEnabled(true)
+	l := list.New(i, dz, DEFAULT_WIDTH, LIST_HEIGHT)
+
+	l.SetShowTitle(false)
+	//l.Title = "Tasks pending today"
+
+	l.SetFilteringEnabled(!dz.GetOpts().QuitImmediately)
 	l.SetShowStatusBar(false)
 
 	//TODO: make my own
-	l.SetShowHelp(false)
+	l.SetShowHelp(!dz.GetOpts().QuitImmediately)
 
-	l.Title = "Tasks pending today"
-	l.SetShowTitle(true)
 	l.InfiniteScrolling = true
 	return updateListStyles(&l, s)
 }

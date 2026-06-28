@@ -6,8 +6,10 @@ import (
 	"danzmen/flags"
 	"danzmen/tui"
 	ty "danzmen/types"
+	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"charm.land/bubbles/v2/list"
@@ -57,6 +59,33 @@ func main() {
 		dbTasks, err = sdb.CreateIfNotExistsTasks(names)
 	}
 
+	if f.Type == flags.PROGRAM_TOGGLE {
+		f := f.Args[0]
+		id, err := strconv.Atoi(f)
+		if err != nil {
+			fmt.Println("Invalid {id}. Only accepting positive numbers.")
+			os.Exit(1)
+		}
+
+		for _, v := range dbTasks {
+			if v.Id == id {
+				var c int = 0
+				if v.Completed == 0 {
+					c = 1
+				}
+				if err := sdb.UpdateCompletedTask(id, c); err != nil {
+					fmt.Println("Error: ", err.Error())
+					os.Exit(1)
+					return
+				}
+				fmt.Println("Success")
+				return
+			}
+		}
+		fmt.Println("Id not found. Does it exists in today's date?")
+		os.Exit(1)
+	}
+
 	if err != nil {
 		panic(err)
 	}
@@ -77,6 +106,9 @@ func main() {
 		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), false)
 	case flags.PROGRAM_LIST:
 		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), true)
+
+	case flags.PROGRAM_TOGGLE:
+		return
 
 	default:
 		panic("invalid option")
