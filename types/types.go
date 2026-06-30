@@ -3,6 +3,7 @@ package types
 import (
 	"log"
 	"strings"
+	"time"
 )
 
 func DBIntToBool(i int) bool {
@@ -24,6 +25,10 @@ const (
 	SATURDAY  DAYS_PER_WEEK = "saturday"
 )
 
+func GetTodaysDayName() DAYS_PER_WEEK {
+	return ValidateDayOfTheWeek(time.Now().Weekday().String())
+}
+
 // i can assert the type... but i prefer to make sure...
 func ValidateDayOfTheWeek(d string) DAYS_PER_WEEK {
 	switch strings.TrimSpace(strings.ToLower(d)) {
@@ -42,7 +47,7 @@ func ValidateDayOfTheWeek(d string) DAYS_PER_WEEK {
 	case string(SATURDAY):
 		return SATURDAY
 	default:
-		log.Panicf("Invalid day name: %s. Remove or update it from the config file.\n", d)
+		log.Fatalf("Invalid day name: %s. Remove or update it from the config file.\n", d)
 	}
 
 	return ""

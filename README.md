@@ -1,3 +1,5 @@
+> [!NOTE]  
+> Pretty much on beta. not even for a v0.0.1 and reiterating over and over with api changes
 
 #### todo: 
 - [x] sqlite
@@ -5,7 +7,7 @@
 - [ ] make a streak popup. add a sql table called "date_objectives" to store it.
 - [ ] add support for date specific tasks (however it isn't the purpose of this)
 - [x] on selectOrCreate query dont increment id if it failed silently
-- [ ] make the flags on main more easily manageable
+- [x] make the flags on main more easily manageable
 - [ ] make height be same as the list height IF list.height() < MAX_HEIGHT
 - [ ] stop using bubbles/list and make my own components
 - [ ] add a secondary list for long term tasks. ex: 
@@ -17,7 +19,7 @@
 
 - [ ] finish loop.*d tasks
 - [ ] show tasks as horizontal
-- [ ] parse the tasks from the toml to lowercase (make them case insensitive)
+- [x] parse the tasks from the toml to lowercase (make them case insensitive) (+ trimmed space)
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.

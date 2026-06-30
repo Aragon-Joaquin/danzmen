@@ -93,7 +93,7 @@ var (
 )
 
 func (m TuiModel) View() tea.View {
-	c := container.Width(m.w).Margin(0).Padding(0)
+	c := container.Width(m.w).MarginTop(1).Padding(0)
 
 	v := tea.NewView(c.Render(m.list.View()))
 	if !m.quitImmediately {
