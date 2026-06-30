@@ -20,6 +20,10 @@
 - [ ] finish loop.*d tasks
 - [ ] show tasks as horizontal
 - [x] parse the tasks from the toml to lowercase (make them case insensitive) (+ trimmed space)
+- [ ] create the config.toml file with a bash script and ln -s to $HOME/desktop inside the Makefile @install flag
+- [ ] improve toml error to be more explicit
+- [ ] restart tasks state per day
+- [ ] show non completed tasks first
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.
