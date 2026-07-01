@@ -1,23 +1,16 @@
 package tui
 
 import (
-	"danzmen/db"
-	"log"
-
-	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"danzmen/db"
 )
 
 type TuiModel struct {
-	list  list.Model
-	db    *db.SqliteDB
-	style styles
-
+	db              *db.SqliteDB
 	quitImmediately bool
-
-	w int
-	h int
+	w               int
+	h               int
 }
 
 const (
@@ -25,13 +18,12 @@ const (
 	LIST_HEIGHT   = 8
 )
 
-func CreateTUIModel(i []list.Item, db *db.SqliteDB, s styles, q bool) TuiModel {
-	d := &DzDelegateOpts{QuitImmediately: q, RenderCompletes: !q}
+func CreateTUIModel(i []DZItem, db *db.SqliteDB, q bool) TuiModel {
 	mTui := TuiModel{
-		list:            CreateListModel(i, s, d),
-		style:           s,
 		db:              db,
 		quitImmediately: q,
+		w:               DEFAULT_WIDTH,
+		h:               LIST_HEIGHT,
 	}
 
 	return mTui
@@ -49,39 +41,30 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.h = msg.Height
 		m.w = msg.Width
-		m.list.SetWidth(msg.Width)
 
 	case tea.KeyPressMsg:
 		switch k := msg.String(); k {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter", "space":
-			i, ok := m.list.SelectedItem().(DZItem)
-
-			if !ok {
-				break
-			}
+			//i, ok := m.list.SelectedItem().(DZItem)
 
 			//uncheck by default
-			var toggle int = 0
-			if !i.completed {
-				toggle = 1
-			}
+			// var toggle int = 0
+			// if !i.completed {
+			// 	toggle = 1
+			// }
 
-			if err := m.db.UpdateCompletedTask(i.id, toggle); err != nil {
-				log.Println(err)
-				return m, nil
-			}
+			// if err := m.db.UpdateCompletedTask(i.id, toggle); err != nil {
+			// 	log.Println(err)
+			// 	return m, nil
+			// }
 
-			i.completed = !i.completed
-			m.list.SetItem(m.list.Index(), i)
+			//i.completed = !i.completed
 		}
 	}
 
 	var cmd tea.BatchMsg
-	l, c := m.list.Update(msg)
-	m.list = l
-	cmd = append(cmd, c)
 	return m, tea.Batch(cmd...)
 }
 
@@ -95,7 +78,7 @@ var (
 func (m TuiModel) View() tea.View {
 	c := container.Width(m.w).MarginTop(1).Padding(0)
 
-	v := tea.NewView(c.Render(m.list.View()))
+	v := tea.NewView(c.Render("nothin yet"))
 	if !m.quitImmediately {
 		v.AltScreen = true
 	}

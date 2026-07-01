@@ -7,8 +7,6 @@ import (
 	"danzmen/tui"
 	"log"
 
-	"charm.land/bubbles/v2/list"
-
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -49,7 +47,7 @@ func main() {
 		return
 	}
 
-	itemsToRender := []list.Item{}
+	itemsToRender := []tui.DZItem{}
 	if len(dbTasks) > 0 {
 		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
 			itemsToRender = append(itemsToRender, v)
@@ -60,9 +58,9 @@ func main() {
 	var model tui.TuiModel
 	switch f.Type {
 	case flags.PROGRAM_CHECK:
-		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), false)
+		model = tui.CreateTUIModel(itemsToRender, sdb, false)
 	case flags.PROGRAM_LIST:
-		model = tui.CreateTUIModel(itemsToRender, sdb, tui.NewSimpleStyle(), true)
+		model = tui.CreateTUIModel(itemsToRender, sdb, true)
 	default:
 		panic("invalid option")
 	}

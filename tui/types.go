@@ -6,8 +6,10 @@ import (
 	"fmt"
 )
 
+// TODO: make DZItem an interface instead of a struct
 type DZItem struct {
 	id        int
+	index     int
 	title     string
 	completed bool
 }
