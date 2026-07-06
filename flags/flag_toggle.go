@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_DateRecord_Tasks) {
+func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_Daily) {
 	f := p.Args[0]
 	id, err := strconv.Atoi(f)
 	if err != nil {

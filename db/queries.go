@@ -8,23 +8,23 @@ import (
 )
 
 // NOTE: tables
-type DBTask struct {
+type DBDaily_Task struct {
 	Id   int
 	Name string
 }
-type DBDate_Record struct {
+type DBDaily_Record struct {
 	Date      string
-	TaskId    int
+	DailyId   int
 	Completed int
 }
 
-type DBJoin_DateRecord_Tasks struct {
-	*DBTask
-	*DBDate_Record
+type DBJoin_Daily struct {
+	*DBDaily_Task
+	*DBDaily_Record
 }
 
 // NOTE: repository
-func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
+func (s *SqliteDB) InsertTask(name string) (*DBDaily_Task, error) {
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 
@@ -34,19 +34,19 @@ func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 		return nil, err
 	}
 
-	q1 := `insert into tasks(id, name) values (NULL, ?) returning id,name;`
+	q1 := `insert into daily_tasks(id, name) values (NULL, ?) returning id,name;`
 	r := tx.QueryRowContext(ctx, q1, name)
 
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
 
-	t := &DBTask{}
+	t := &DBDaily_Task{}
 	if err := r.Scan(&t.Id, &t.Name); err != nil {
 		return nil, err
 	}
 
-	q2 := `insert into date_record(task_id) values (?);`
+	q2 := `insert into daily_record(daily_id) values (?);`
 	if _, err := tx.ExecContext(ctx, q2, t.Id); err != nil {
 		return nil, err
 	}
@@ -60,14 +60,14 @@ func (s *SqliteDB) InsertTask(name string) (*DBTask, error) {
 
 func (s *SqliteDB) UpdateCompletedTask(id int, completed int) error {
 	q := `
-	update date_record set completed = ? where task_id = ?;
+	update daily_record set completed = ? where daily_id = ? AND date = date();
 	`
 
 	_, err := s.db.ExecContext(context.Background(), q, completed, id)
 	return err
 }
 
-func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_Tasks, error) {
+func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, error) {
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -77,8 +77,8 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 	defer tx.Rollback()
 
 	//NOTE: INSERT
-	q1 := `insert or ignore into tasks(id, name) values(NULL, ?) returning id;`
-	q2 := `insert into date_record(task_id) values(?);`
+	q1 := `insert or ignore into daily_tasks(id, name) values(NULL, ?) returning id;`
+	q2 := `insert into daily_record(daily_id) values(?);`
 
 	for _, s := range names {
 		var t_id int
@@ -100,9 +100,9 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 	q3 := fmt.Sprintf(`
 	select 
 	t.id as t_id, t.name as t_name,
-	coalesce(d.date, "") as d_date, d.task_id as d_taskid, d.completed as d_completed
-	from tasks t
-	left join date_record d on d.task_id = t.id
+	coalesce(d.date, "") as d_date, d.daily_id as d_dailyid, d.completed as d_completed
+	from daily_tasks t
+	left join date_record d on d.task_id = t.id and d.date = date()
 	where name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
@@ -115,17 +115,20 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_DateRecord_
 		return nil, err
 	}
 
-	res := []*DBJoin_DateRecord_Tasks{}
+	res := []*DBJoin_Daily{}
 	for r.Next() {
-		t := &DBJoin_DateRecord_Tasks{}
-		t.DBTask = &DBTask{}
-		t.DBDate_Record = &DBDate_Record{}
+		t := &DBJoin_Daily{}
+		dt := &DBDaily_Task{}
+		dr := &DBDaily_Record{}
 
 		if err := r.Scan(
-			&t.DBTask.Id, &t.DBTask.Name,
-			&t.DBDate_Record.Date, &t.DBDate_Record.TaskId, &t.DBDate_Record.Completed); err != nil {
+			&dt.Id, &dt.Name,
+			&dr.Date, &dr.DailyId, &dr.Completed); err != nil {
 			return nil, err
 		}
+
+		t.DBDaily_Record = dr
+		t.DBDaily_Task = dt
 		res = append(res, t)
 	}
 

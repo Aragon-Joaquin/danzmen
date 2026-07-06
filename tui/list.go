@@ -1,42 +1,295 @@
 package tui
 
-type DZList struct {
-	Items      []DZItem
+import (
+	"fmt"
+	"slices"
+	"strings"
+
+	"charm.land/lipgloss/v2"
+)
+
+type DZList interface {
+	GetSelectID() int
+	SelectedItem() (item DZTask, ok bool)
+	SetItem(idx int, item DZTask) bool
+
+	//ui things
+	SetHeight(h int)
+	SetWidth(w int)
+	View() string
+}
+
+type listModel struct {
+	h, w       int
+	items      []listItem
 	selectedId int
 
 	styles styles
 }
 
-func CreateDZList(i []DZItem, s styles) *DZList {
+type listItem struct {
+	item DZTask
+	id   int
+}
+
+func CreateDZList(i []DZTask, s styles, w, h int) DZList {
 	//put an index for each
-	for idx := range i {
-		i[idx].index = idx
+	var listTasks = []listItem{}
+	for idx, v := range i {
+		listTasks = append(listTasks, listItem{
+			item: v,
+			id:   idx,
+		})
 	}
 
-	return &DZList{
-		Items:      i,
+	return &listModel{
+		items:      listTasks,
 		selectedId: 0,
 		styles:     s,
+		h:          h,
+		w:          w,
 	}
 }
 
-func (l *DZList) GetSelectID() int {
+func (l *listModel) GetSelectID() int {
 	return l.selectedId
 }
 
-func (l *DZList) GetSelectedItem() (item DZItem, ok bool) {
-	if l.selectedId < 0 || l.selectedId >= len(l.Items) {
-		return DZItem{}, false
+func (l *listModel) SelectedItem() (item DZTask, ok bool) {
+	if l.selectedId < 1 || l.selectedId >= len(l.items) {
+		return nil, false
 	}
 
-	return l.Items[l.selectedId], true
+	i := l.items[l.selectedId]
+	return i.item, true
 }
 
-func (l *DZList) SetItem(idx int, item DZItem) bool {
-	if idx < 0 || idx > len(l.Items) {
+func (l *listModel) SetItem(idx int, item DZTask) bool {
+	if idx < 0 || idx > len(l.items) {
 		return false
 	}
 
-	l.Items[idx] = item
+	lTask := &listItem{
+		item: item,
+		id:   idx,
+	}
+
+	l.items[idx] = *lTask
 	return true
+}
+
+func (l *listModel) SetHeight(h int) {
+	l.h = h
+}
+func (l *listModel) SetWidth(w int) {
+	l.w = w
+}
+
+// WARN: private
+func (l *listModel) incrementSelector() int {
+	if len(l.items) < l.selectedId {
+		l.selectedId += 1
+	}
+	return l.selectedId
+}
+
+func (l *listModel) decrementSelector() int {
+	if l.selectedId > 0 {
+		l.selectedId -= 1
+	}
+	return l.selectedId
+}
+
+// grabs up to AT_LEAST_NUMBER_OF_DAILY_TASKS (8) at prioritizes the uncompleted first
+// IF the uncompleted tasks are equal to AT_LEAST_NUMBER_OF_DAILY_TASKS then it does nothing
+// IF the uncompleted tasks are less to AT_LEAST_NUMBER_OF_DAILY_TASKS but there's no more tasks, it does nothing
+// IF the uncompleted tasks are less AND there's more tasks, it just fills with whatever task there is
+func (l *listModel) selectDailyTasksCompletedAndFill() []listItem {
+	if len(l.items) == 0 {
+		return []listItem{}
+	}
+
+	var atleast_daily = map[int]listItem{}
+	for _, v := range l.items {
+		if v.item.Completed() {
+			continue
+		}
+		atleast_daily[v.item.ID()] = v
+
+		if len(atleast_daily) == AT_LEAST_NUMBER_OF_DAILY_TASKS {
+			break
+		}
+	}
+
+	if len(atleast_daily) < AT_LEAST_NUMBER_OF_DAILY_TASKS && len(l.items) >= AT_LEAST_NUMBER_OF_DAILY_TASKS {
+		for _, v := range l.items {
+			_, ok := atleast_daily[v.item.ID()]
+			if ok {
+				continue
+			}
+			atleast_daily[v.item.ID()] = v
+		}
+	}
+
+	var arr_atleast_daily = []listItem{}
+	for _, v := range atleast_daily {
+		arr_atleast_daily = append(arr_atleast_daily, v)
+	}
+
+	//i dont know if the slices.SortedFunc is what panics since it tries to access the second item?
+	if len(arr_atleast_daily) < 2 {
+		return arr_atleast_daily
+	}
+
+	return slices.SortedFunc(slices.Values(arr_atleast_daily), func(li1, li2 listItem) int {
+		if li1.item.ID() > li2.item.ID() {
+			return -1
+		}
+		return 1
+	})
+}
+
+var (
+	idx_box    = lipgloss.NewStyle().Inline(true).Width(8).MaxWidth(8)
+	figlet_art = lipgloss.JoinVertical(
+		lipgloss.Center,
+		lipgloss.NewStyle().Foreground(lipgloss.Yellow).Render(FLASH_FIGLET),
+		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.BrightBlack).Render("No tasks assigned for today"),
+	)
+)
+
+func (l *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
+	if len(items) == 0 {
+		return figlet_art
+	}
+
+	var renderedCells []string
+	for _, i := range items {
+		renderedCells = append(renderedCells,
+			c.Render(
+				idx_box.Render(
+					fmt.Sprintf("%s %d)",
+						i.item.ReturnCheckboxString(), i.item.ID()),
+				),
+				i.item.Title(),
+			),
+		)
+	}
+
+	var rows = []string{}
+	var count int = 0
+	for i := range renderedCells {
+		if i%MAX_PER_ROW == 0 || len(renderedCells) == i-1 {
+			rows = append(rows,
+				lipgloss.JoinHorizontal(
+					lipgloss.Top,
+					renderedCells[i:count]...),
+			)
+			count = 0
+			continue
+		}
+		count++
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, rows...)
+}
+
+func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
+	completed = 0
+	for _, v := range l.items {
+		if v.item.Completed() {
+			completed++
+		}
+	}
+
+	return len(l.items), completed
+}
+
+const (
+	MINIMUM_WIDTH_REQUIRED             = 80
+	MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED = 160
+	AT_LEAST_NUMBER_OF_DAILY_TASKS     = 8
+	MAX_PER_ROW                        = 3
+)
+
+var (
+	baseTitleStyle = lipgloss.NewStyle().
+			Bold(true).
+			Border(lipgloss.RoundedBorder(), false, false, true, false).
+			AlignHorizontal(lipgloss.Center)
+
+	dailyTitle = baseTitleStyle.
+			BorderForeground(lipgloss.Yellow).
+			Foreground(lipgloss.Yellow).
+			MarginLeft(2)
+
+	longTermTitle = baseTitleStyle.
+			BorderForeground(lipgloss.Red).
+			Foreground(lipgloss.Red).
+			MarginRight(2)
+
+	separatorLine = lipgloss.NewStyle().
+			Foreground(lipgloss.BrightBlack).
+			Padding(0, 2)
+
+	cStyle = lipgloss.NewStyle().
+		Height(2).
+		Border(lipgloss.RoundedBorder()).
+		Padding(0, 1)
+)
+
+// NOTE: view
+func (m *listModel) View() string {
+	if m.w < MINIMUM_WIDTH_REQUIRED {
+		return "not enough space"
+	}
+
+	daily_itemsToRender := m.selectDailyTasksCompletedAndFill()
+	total, completed := m.countTotalAndCompletedTasks()
+	dailyText := fmt.Sprintf("Daily tasks (%d/%d completed)", completed, total)
+
+	//NOTE: it makes the supposition that the cli is always its maximum width
+	//TODO: maybe change the order of values. since it does less operations
+	cWidth := (m.w / 2) / 3 // half the width - 4 (padding) / 3 (items horizontally)
+	titlePadding := (m.w - 8) / 2
+
+	if m.w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
+		cWidth = m.w
+		titlePadding = m.w - 4
+	}
+
+	//NOTE: render simple UI
+	if m.w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
+		widthForTitle := (m.w - 4) / 2 //4 for extra padding
+		return lipgloss.JoinVertical(
+			lipgloss.Center,
+			lipgloss.JoinHorizontal(
+				lipgloss.Center,
+				dailyTitle.Border(lipgloss.Border{}, false).Width(widthForTitle).AlignHorizontal(lipgloss.Left).MarginLeft(2).Render(dailyText),
+				lipgloss.NewStyle().Width(widthForTitle).AlignHorizontal(lipgloss.Right).Foreground(lipgloss.BrightRed).MarginRight(2).Render("LTT Ends in: 123d"),
+			),
+			lipgloss.NewStyle().Width(m.w).Border(lipgloss.RoundedBorder(), true, false, false, false).BorderForeground(lipgloss.Yellow).Render(),
+			m.renderDailyGrid(daily_itemsToRender, cStyle.Width(cWidth)),
+		)
+	}
+
+	//NOTE: render complex ui (double tasks)
+	dailySection := lipgloss.JoinVertical(
+		lipgloss.Center,
+		dailyTitle.Width(titlePadding).Render(dailyText),
+		m.renderDailyGrid(daily_itemsToRender, cStyle.Width(cWidth)))
+
+	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 12), "\n")
+
+	longTermSection := lipgloss.JoinVertical(
+		lipgloss.Center,
+		longTermTitle.Width(titlePadding).Render(
+			fmt.Sprintf("Long term (%dd left!)", 320),
+		))
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		dailySection,
+		separatorLine.Render(verticalBar),
+		longTermSection,
+	)
 }

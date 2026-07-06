@@ -4,13 +4,13 @@
 #### todo: 
 - [x] sqlite
 - [x] make different list delegates (simple and check)
-- [ ] make a streak popup. add a sql table called "date_objectives" to store it.
-- [ ] add support for date specific tasks (however it isn't the purpose of this)
+- [ ] make a streak popup. add a sql table called "daily_progress" to store it.
+<!-- - [ ] add support for date specific tasks (however it isn't the purpose of this) -->
 - [x] on selectOrCreate query dont increment id if it failed silently
 - [x] make the flags on main more easily manageable
 - [ ] make height be same as the list height IF list.height() < MAX_HEIGHT
-- [ ] stop using bubbles/list and make my own components
-- [ ] add a secondary list for long term tasks. ex: 
+- [x] stop using bubbles/list and make my own components
+- [x] add a secondary list for long term tasks. ex: 
 
 | Daily  | Long term |
 | --------------- | --------------- |
@@ -18,12 +18,13 @@
 | [ ] Read 10 pages | [ ] Get a j*b |
 
 - [ ] finish loop.*d tasks
-- [ ] show tasks as horizontal
+- [x] show tasks as horizontal
 - [x] parse the tasks from the toml to lowercase (make them case insensitive) (+ trimmed space)
 - [ ] create the config.toml file with a bash script and ln -s to $HOME/desktop inside the Makefile @install flag
 - [ ] improve toml error to be more explicit
 - [ ] restart tasks state per day
-- [ ] show non completed tasks first
+- [x] show non completed tasks first
+- [ ] optimize db (create indexes)
 
 ## danzmen
 more like a tui daily agenda using a .toml config file.

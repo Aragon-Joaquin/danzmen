@@ -3,7 +3,7 @@ package config
 import (
 	ty "danzmen/types"
 	"errors"
-	"log"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -38,7 +38,7 @@ func ParseTOML() (*Cfg, error) {
 
 	if _, err := os.Stat(path); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			log.Println("Config file not specified, using default: ", err.Error())
+			fmt.Println("Config file not specified, using default.", err.Error())
 			return c, nil
 		}
 		return nil, err

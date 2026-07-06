@@ -1,3 +1,4 @@
+CONFIG_LOCATION = $(HOME)/.config/danzmen/config.toml 
 all: test clean watch
 
 watch:

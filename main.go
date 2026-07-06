@@ -14,7 +14,7 @@ func main() {
 	//NOTE: flag parsing
 	f, err := flags.ParseOptions()
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln("FLAG: ", err.Error())
 	}
 
 	if f.Type == flags.PROGRAM_HELP {
@@ -24,7 +24,8 @@ func main() {
 	//NOTE: toml
 	cfg, err := config.ParseTOML()
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln("TOML: ", err.Error())
+		return
 	}
 
 	names := cfg.GetTasksNonRepeatableNames()
@@ -32,13 +33,13 @@ func main() {
 	//NOTE: call the db to obtain the values
 	sdb, err := db.Init()
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Fatalln("DB: ", err.Error())
 	}
 
-	dbTasks := []*db.DBJoin_DateRecord_Tasks{}
+	dbTasks := []*db.DBJoin_Daily{}
 	if len(names) > 0 {
 		if dbTasks, err = sdb.CreateIfNotExistsTasks(names); err != nil {
-			log.Fatalln(err.Error())
+			log.Fatalln("CreateIfNotExists: ", err.Error())
 		}
 	}
 
@@ -47,7 +48,7 @@ func main() {
 		return
 	}
 
-	itemsToRender := []tui.DZItem{}
+	itemsToRender := []tui.DZTask{}
 	if len(dbTasks) > 0 {
 		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
 			itemsToRender = append(itemsToRender, v)
