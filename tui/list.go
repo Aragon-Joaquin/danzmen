@@ -142,10 +142,10 @@ func (l *listModel) selectDailyTasksCompletedAndFill() []listItem {
 	}
 
 	return slices.SortedFunc(slices.Values(arr_atleast_daily), func(li1, li2 listItem) int {
-		if li1.item.ID() > li2.item.ID() {
-			return -1
+		if li1.item.ID() >= li2.item.ID() {
+			return 1
 		}
-		return 1
+		return -1
 	})
 }
 
@@ -158,7 +158,7 @@ var (
 	)
 )
 
-func (l *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
+func (_ *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
 	if len(items) == 0 {
 		return figlet_art
 	}
@@ -171,24 +171,20 @@ func (l *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
 					fmt.Sprintf("%s %d)",
 						i.item.ReturnCheckboxString(), i.item.ID()),
 				),
-				i.item.Title(),
+				i.item.TitleEllipsis(22),
 			),
 		)
 	}
 
-	var rows = []string{}
-	var count int = 0
-	for i := range renderedCells {
-		if i%MAX_PER_ROW == 0 || len(renderedCells) == i-1 {
-			rows = append(rows,
-				lipgloss.JoinHorizontal(
-					lipgloss.Top,
-					renderedCells[i:count]...),
-			)
-			count = 0
-			continue
-		}
-		count++
+	var rows []string
+	for i := 0; i < len(renderedCells); i += MAX_PER_ROW {
+		end := min(i+MAX_PER_ROW, len(renderedCells))
+		rows = append(rows,
+			lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				renderedCells[i:end]...,
+			),
+		)
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, rows...)
 }
@@ -232,13 +228,29 @@ var (
 			Padding(0, 2)
 
 	cStyle = lipgloss.NewStyle().
-		Height(2).
-		Border(lipgloss.RoundedBorder()).
-		Padding(0, 1)
+		Height(3).
+		MaxHeight(3).
+		Border(lipgloss.RoundedBorder())
+
+		//simple UI - half the screen
+	lttNotify = lipgloss.NewStyle().
+			AlignHorizontal(lipgloss.Right).
+			Foreground(lipgloss.BrightRed).
+			MarginRight(2)
+
+	dailyTitleHalf = dailyTitle.
+			Border(lipgloss.Border{}, false).
+			AlignHorizontal(lipgloss.Left).
+			MarginLeft(2)
+
+	borderBottom = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder(), true, false, false, false).
+			BorderForeground(lipgloss.Yellow)
 )
 
 // NOTE: view
 func (m *listModel) View() string {
+	//NOTE: not enough space
 	if m.w < MINIMUM_WIDTH_REQUIRED {
 		return "not enough space"
 	}
@@ -247,36 +259,46 @@ func (m *listModel) View() string {
 	total, completed := m.countTotalAndCompletedTasks()
 	dailyText := fmt.Sprintf("Daily tasks (%d/%d completed)", completed, total)
 
-	//NOTE: it makes the supposition that the cli is always its maximum width
-	//TODO: maybe change the order of values. since it does less operations
-	cWidth := (m.w / 2) / 3 // half the width - 4 (padding) / 3 (items horizontally)
-	titlePadding := (m.w - 8) / 2
+	var cWidth int = 0
+	var titlePadding int = 0
 
-	if m.w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
+	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
+	if m.w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
+		cWidth = (m.w / 2) / 3 // half the width - 4 (padding) / 3 (items horizontally)
+		titlePadding = (m.w - 8) / 2
+	} else {
 		cWidth = m.w
 		titlePadding = m.w - 4
+	}
+
+	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
+	cellsRendered := m.renderDailyGrid(daily_itemsToRender, cell)
+
+	var hasItemsPosition lipgloss.Position = lipgloss.Left
+	if len(cellsRendered) > 0 {
+		hasItemsPosition = lipgloss.Center
 	}
 
 	//NOTE: render simple UI
 	if m.w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
 		widthForTitle := (m.w - 4) / 2 //4 for extra padding
+
 		return lipgloss.JoinVertical(
 			lipgloss.Center,
 			lipgloss.JoinHorizontal(
-				lipgloss.Center,
-				dailyTitle.Border(lipgloss.Border{}, false).Width(widthForTitle).AlignHorizontal(lipgloss.Left).MarginLeft(2).Render(dailyText),
-				lipgloss.NewStyle().Width(widthForTitle).AlignHorizontal(lipgloss.Right).Foreground(lipgloss.BrightRed).MarginRight(2).Render("LTT Ends in: 123d"),
+				hasItemsPosition,
+				dailyTitleHalf.Width(widthForTitle).Render(dailyText),
+				lttNotify.Width(widthForTitle).Render("LTT Ends in: 123d"),
 			),
-			lipgloss.NewStyle().Width(m.w).Border(lipgloss.RoundedBorder(), true, false, false, false).BorderForeground(lipgloss.Yellow).Render(),
-			m.renderDailyGrid(daily_itemsToRender, cStyle.Width(cWidth)),
-		)
+			borderBottom.Width(m.w).Render(),
+			cellsRendered)
 	}
 
 	//NOTE: render complex ui (double tasks)
 	dailySection := lipgloss.JoinVertical(
-		lipgloss.Center,
+		hasItemsPosition,
 		dailyTitle.Width(titlePadding).Render(dailyText),
-		m.renderDailyGrid(daily_itemsToRender, cStyle.Width(cWidth)))
+		cellsRendered)
 
 	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 12), "\n")
 

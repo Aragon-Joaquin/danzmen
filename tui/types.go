@@ -11,6 +11,7 @@ type DZTask interface {
 	Title() string
 	Completed() bool
 
+	TitleEllipsis(length int) string
 	ReturnCheckboxString() string
 }
 
@@ -27,9 +28,7 @@ func CreateMultipleDZItem(d ...*db.DBJoin_Daily) []DZTask {
 }
 
 func CreateDZItem(d *db.DBJoin_Daily) DZTask {
-	return &task{
-		id:        d.DBDaily_Task.Id,
-		title:     d.DBDaily_Task.Name,
+	return &task{id: d.DBDaily_Task.Id, title: d.DBDaily_Task.Name,
 		completed: ty.DBIntToBool(d.Completed),
 	}
 }
@@ -51,4 +50,10 @@ func (i *task) ReturnCheckboxString() string {
 	}
 
 	return fmt.Sprintf("[%s]", checked)
+}
+func (i *task) TitleEllipsis(length int) string {
+	if length >= len(i.title) {
+		return i.title
+	}
+	return fmt.Sprintf("%s...", i.title[:length])
 }

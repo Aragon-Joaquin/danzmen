@@ -102,7 +102,7 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	t.id as t_id, t.name as t_name,
 	coalesce(d.date, "") as d_date, d.daily_id as d_dailyid, d.completed as d_completed
 	from daily_tasks t
-	left join date_record d on d.task_id = t.id and d.date = date()
+	left join daily_record d on d.daily_id = t.id and d.date = date()
 	where name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
