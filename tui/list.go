@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 	"strings"
@@ -121,13 +122,18 @@ func (l *listModel) selectDailyTasksCompletedAndFill() []listItem {
 		}
 	}
 
-	if len(atleast_daily) < AT_LEAST_NUMBER_OF_DAILY_TASKS && len(l.items) >= AT_LEAST_NUMBER_OF_DAILY_TASKS {
+	if len(atleast_daily) < AT_LEAST_NUMBER_OF_DAILY_TASKS && len(l.items) >= len(atleast_daily) {
 		for _, v := range l.items {
 			_, ok := atleast_daily[v.item.ID()]
-			if ok {
+			if ok || !v.item.Completed() {
 				continue
 			}
 			atleast_daily[v.item.ID()] = v
+
+			if len(atleast_daily) == AT_LEAST_NUMBER_OF_DAILY_TASKS {
+				break
+			}
+
 		}
 	}
 
@@ -142,10 +148,14 @@ func (l *listModel) selectDailyTasksCompletedAndFill() []listItem {
 	}
 
 	return slices.SortedFunc(slices.Values(arr_atleast_daily), func(li1, li2 listItem) int {
-		if li1.item.ID() >= li2.item.ID() {
+		if li1.item.Completed() != li2.item.Completed() {
+			if !li1.item.Completed() {
+				return -1
+			}
 			return 1
 		}
-		return -1
+
+		return cmp.Compare(li1.item.ID(), li2.item.ID())
 	})
 }
 
@@ -165,13 +175,20 @@ func (_ *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
 
 	var renderedCells []string
 	for _, i := range items {
+		idx_cmp := idx_box.Foreground(lipgloss.Yellow)
+		title_cmp := lipgloss.NewStyle()
+		if i.item.Completed() {
+			idx_cmp = idx_cmp.Foreground(lipgloss.BrightBlack)
+			title_cmp = title_cmp.Foreground(lipgloss.BrightBlack)
+		}
+
 		renderedCells = append(renderedCells,
 			c.Render(
-				idx_box.Render(
+				idx_cmp.Render(
 					fmt.Sprintf("%s %d)",
 						i.item.ReturnCheckboxString(), i.item.ID()),
 				),
-				i.item.TitleEllipsis(22),
+				title_cmp.Render(i.item.TitleEllipsis(22)),
 			),
 		)
 	}
@@ -204,7 +221,7 @@ const (
 	MINIMUM_WIDTH_REQUIRED             = 80
 	MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED = 160
 	AT_LEAST_NUMBER_OF_DAILY_TASKS     = 8
-	MAX_PER_ROW                        = 3
+	MAX_PER_ROW                        = 2
 )
 
 var (
@@ -228,11 +245,15 @@ var (
 			Padding(0, 2)
 
 	cStyle = lipgloss.NewStyle().
-		Height(3).
-		MaxHeight(3).
-		Border(lipgloss.RoundedBorder())
+		MarginLeft(3).
+		Height(2).
+		MaxHeight(2)
 
-		//simple UI - half the screen
+	remainingTasks = lipgloss.NewStyle().
+			Foreground(lipgloss.BrightBlack).
+			AlignHorizontal(lipgloss.Center)
+
+	//simple UI - half the screen
 	lttNotify = lipgloss.NewStyle().
 			AlignHorizontal(lipgloss.Right).
 			Foreground(lipgloss.BrightRed).
@@ -256,6 +277,7 @@ func (m *listModel) View() string {
 	}
 
 	daily_itemsToRender := m.selectDailyTasksCompletedAndFill()
+
 	total, completed := m.countTotalAndCompletedTasks()
 	dailyText := fmt.Sprintf("Daily tasks (%d/%d completed)", completed, total)
 
@@ -264,7 +286,7 @@ func (m *listModel) View() string {
 
 	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
 	if m.w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
-		cWidth = (m.w / 2) / 3 // half the width - 4 (padding) / 3 (items horizontally)
+		cWidth = (m.w / 2) / 2 // half the width - 4 (padding) / 2 (items horizontally)
 		titlePadding = (m.w - 8) / 2
 	} else {
 		cWidth = m.w
@@ -291,14 +313,23 @@ func (m *listModel) View() string {
 				lttNotify.Width(widthForTitle).Render("LTT Ends in: 123d"),
 			),
 			borderBottom.Width(m.w).Render(),
-			cellsRendered)
+			cellsRendered,
+		)
+	}
+
+	var r_tasks string = ""
+	if len(daily_itemsToRender) > AT_LEAST_NUMBER_OF_DAILY_TASKS {
+		r_tasks = remainingTasks.Width((m.w - 2) / 2).Render(
+			fmt.Sprintf("Show %d more tasks", len(daily_itemsToRender)-AT_LEAST_NUMBER_OF_DAILY_TASKS))
 	}
 
 	//NOTE: render complex ui (double tasks)
 	dailySection := lipgloss.JoinVertical(
 		hasItemsPosition,
 		dailyTitle.Width(titlePadding).Render(dailyText),
-		cellsRendered)
+		cellsRendered,
+		r_tasks,
+	)
 
 	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 12), "\n")
 

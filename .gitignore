@@ -3,3 +3,4 @@ go.sum
 tmp/
 danzmen
 danzmen.db
+__debug_bin*

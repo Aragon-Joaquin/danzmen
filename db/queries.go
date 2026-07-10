@@ -77,18 +77,22 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	defer tx.Rollback()
 
 	//NOTE: INSERT
-	q1 := `insert or ignore into daily_tasks(id, name) values(NULL, ?) returning id;`
-	q2 := `insert into daily_record(daily_id) values(?);`
+	// create values or ignore errors
+	// select the the values
+	// insert them into daily_record
+	q1 := `insert or ignore into daily_tasks(id, name) values(NULL, ?);`
+	q1_5 := `select id from daily_tasks where name = (?)`
+	q2 := `insert or ignore into daily_record(daily_id, date) values(?, date());`
 
 	for _, s := range names {
-		var t_id int
-		if err := tx.QueryRowContext(ctx, q1, s).Scan(&t_id); err != nil {
-			continue
-		}
+		_, _ = tx.ExecContext(ctx, q1, s)
 
-		if _, err := tx.ExecContext(ctx, q2, t_id); err != nil {
+		var t_id int
+		if err := tx.QueryRowContext(ctx, q1_5, s).Scan(&t_id); err != nil {
 			return nil, err
 		}
+
+		_, _ = tx.ExecContext(ctx, q2, t_id)
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -103,7 +107,7 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	coalesce(d.date, "") as d_date, d.daily_id as d_dailyid, d.completed as d_completed
 	from daily_tasks t
 	left join daily_record d on d.daily_id = t.id and d.date = date()
-	where name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
+	where t.name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
 
 	var args []any
 	for _, n := range names {
