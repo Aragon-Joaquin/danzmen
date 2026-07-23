@@ -13,7 +13,8 @@ type TuiModel struct {
 	quitImmediately bool
 	w               int
 	h               int
-	list            DZList
+	daily_list      DZList
+	long_list       DZList
 }
 
 const (
@@ -21,14 +22,14 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func CreateTUIModel(i []DZTask, longTerm []DZLongTask, db *db.SqliteDB, q bool) TuiModel {
+func CreateTUIModel(daily []DZTask, long []DZLongTask, db *db.SqliteDB, q bool) TuiModel {
 	mTui := TuiModel{
 		db:              db,
 		quitImmediately: q,
 		w:               DEFAULT_WIDTH,
 		h:               LIST_HEIGHT,
-		//TODO: separate both daily and long in differents lists
-		list: CreateDZList(i, longTerm, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		daily_list:      CreateDZList(daily, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		long_list:       CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 	}
 
 	return mTui
@@ -46,15 +47,15 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.h = msg.Height
 		m.w = msg.Width
-		m.list.SetHeight(msg.Height)
-		m.list.SetWidth(msg.Width)
+		m.daily_list.SetSizes(msg.Width, msg.Height)
+		m.long_list.SetSizes(msg.Width, msg.Height)
 
 	case tea.KeyPressMsg:
 		switch k := msg.String(); k {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter", "space":
-			i, ok := m.list.SelectedItem()
+			i, ok := m.daily_list.SelectedItem()
 
 			if !ok {
 				break
@@ -69,8 +70,6 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				log.Println(err)
 				return m, nil
 			}
-
-			//i.completed = !i.completed
 		}
 	}
 
@@ -88,7 +87,7 @@ var (
 func (m TuiModel) View() tea.View {
 	c := container.Width(m.w).MarginTop(1).Padding(0)
 
-	v := tea.NewView(c.Render(m.list.View()))
+	v := tea.NewView(c.Render(RenderModelView(m.daily_list, m.long_list, m.w, m.h)))
 	if !m.quitImmediately {
 		v.AltScreen = true
 	}

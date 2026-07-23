@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
-	"strings"
 
 	"charm.land/lipgloss/v2"
 )
@@ -13,10 +12,13 @@ type DZList interface {
 	GetSelectID() int
 	SelectedItem() (item DZTask, ok bool)
 	SetItem(idx int, item DZTask) bool
+	Counts() (total int, completed int)
+	CastToLongTask(i DZTask) (t DZLongTask, ok bool)
 
 	//ui things
 	SetHeight(h int)
 	SetWidth(w int)
+	SetSizes(w, h int)
 	View() string
 }
 
@@ -33,7 +35,25 @@ type listItem struct {
 	id   int
 }
 
-func CreateDZList(i []DZTask, l []DZLongTask, s styles, w, h int) DZList {
+func CreateDZLongList(items []DZLongTask, s styles, w, h int) DZList {
+	var listTasks = []listItem{}
+	for idx, v := range items {
+		listTasks = append(listTasks, listItem{
+			item: v,
+			id:   idx,
+		})
+	}
+
+	return &listModel{
+		items:      listTasks,
+		selectedId: 0,
+		styles:     s,
+		h:          h,
+		w:          w,
+	}
+}
+
+func CreateDZList(i []DZTask, s styles, w, h int) DZList {
 	//put an index for each
 	var listTasks = []listItem{}
 	for idx, v := range i {
@@ -50,6 +70,11 @@ func CreateDZList(i []DZTask, l []DZLongTask, s styles, w, h int) DZList {
 		h:          h,
 		w:          w,
 	}
+}
+
+func (l *listModel) CastToLongTask(i DZTask) (t DZLongTask, ok bool) {
+	t, ok = i.(DZLongTask)
+	return
 }
 
 func (l *listModel) GetSelectID() int {
@@ -84,6 +109,15 @@ func (l *listModel) SetHeight(h int) {
 }
 func (l *listModel) SetWidth(w int) {
 	l.w = w
+}
+
+func (l *listModel) SetSizes(w, h int) {
+	l.SetWidth(w)
+	l.SetHeight(h)
+}
+
+func (l *listModel) Counts() (int, int) {
+	return l.countTotalAndCompletedTasks()
 }
 
 // WARN: private
@@ -220,131 +254,17 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 // func (l *listModel) SelectLLTNextToExpire(){}
 
 const (
-	MINIMUM_WIDTH_REQUIRED             = 80
-	MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED = 160
-	AT_LEAST_NUMBER_OF_DAILY_TASKS     = 8
-	MAX_PER_ROW                        = 2
+	AT_LEAST_NUMBER_OF_DAILY_TASKS = 8
+	MAX_PER_ROW                    = 2
 )
 
-var (
-	baseTitleStyle = lipgloss.NewStyle().
-			Bold(true).
-			Border(lipgloss.RoundedBorder(), false, false, true, false).
-			AlignHorizontal(lipgloss.Center)
-
-	dailyTitle = baseTitleStyle.
-			BorderForeground(lipgloss.Yellow).
-			Foreground(lipgloss.Yellow).
-			MarginLeft(2)
-
-	longTermTitle = baseTitleStyle.
-			BorderForeground(lipgloss.Red).
-			Foreground(lipgloss.Red).
-			MarginRight(2)
-
-	separatorLine = lipgloss.NewStyle().
-			Foreground(lipgloss.BrightBlack).
-			Padding(0, 2)
-
-	cStyle = lipgloss.NewStyle().
-		MarginLeft(3).
-		Height(2).
-		MaxHeight(2)
-
-	remainingTasks = lipgloss.NewStyle().
-			Foreground(lipgloss.BrightBlack).
-			AlignHorizontal(lipgloss.Center)
-
-	//simple UI - half the screen
-	lttNotify = lipgloss.NewStyle().
-			AlignHorizontal(lipgloss.Right).
-			Foreground(lipgloss.BrightRed).
-			MarginRight(2)
-
-	dailyTitleHalf = dailyTitle.
-			Border(lipgloss.Border{}, false).
-			AlignHorizontal(lipgloss.Left).
-			MarginLeft(2)
-
-	borderBottom = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder(), true, false, false, false).
-			BorderForeground(lipgloss.Yellow)
-)
-
-// NOTE: view
 func (m *listModel) View() string {
-	//NOTE: not enough space
-	if m.w < MINIMUM_WIDTH_REQUIRED {
-		return "not enough space"
+	dailyItems := m.selectDailyTasksCompletedAndFill()
+	if len(dailyItems) == 0 {
+		return ""
 	}
 
-	daily_itemsToRender := m.selectDailyTasksCompletedAndFill()
-
-	total, completed := m.countTotalAndCompletedTasks()
-	dailyText := fmt.Sprintf("Daily tasks (%d/%d completed)", completed, total)
-
-	var cWidth int = 0
-	var titlePadding int = 0
-
-	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
-	cWidth = m.w / 2
-	if m.w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
-		cWidth = cWidth / 2 // half the width / 2 (items horizontally)
-		titlePadding = (m.w - 8) / 2
-	} else {
-		titlePadding = m.w - 4
-	}
-
+	cWidth := m.w / 2
 	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
-	cellsRendered := m.renderDailyGrid(daily_itemsToRender, cell)
-
-	var hasItemsPosition lipgloss.Position = lipgloss.Left
-	if len(cellsRendered) > 0 {
-		hasItemsPosition = lipgloss.Center
-	}
-
-	//NOTE: render simple UI
-	if m.w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
-		widthForTitle := (m.w - 4) / 2 //4 for extra padding
-
-		return lipgloss.JoinVertical(
-			lipgloss.Center,
-			lipgloss.JoinHorizontal(
-				hasItemsPosition,
-				dailyTitleHalf.Width(widthForTitle).Render(dailyText),
-				lttNotify.Width(widthForTitle).Render("LTT Ends in: 123d"),
-			),
-			borderBottom.Width(m.w-1).Render(),
-			cellsRendered,
-		)
-	}
-
-	var r_tasks string = ""
-	if len(daily_itemsToRender) > AT_LEAST_NUMBER_OF_DAILY_TASKS {
-		r_tasks = remainingTasks.Width((m.w - 2) / 2).Render(
-			fmt.Sprintf("Show %d more tasks", len(daily_itemsToRender)-AT_LEAST_NUMBER_OF_DAILY_TASKS))
-	}
-
-	//NOTE: render complex ui (double tasks)
-	dailySection := lipgloss.JoinVertical(
-		hasItemsPosition,
-		dailyTitle.Width(titlePadding).Render(dailyText),
-		cellsRendered,
-		r_tasks,
-	)
-
-	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 10), "\n")
-
-	longTermSection := lipgloss.JoinVertical(
-		lipgloss.Center,
-		longTermTitle.Width(titlePadding).Render(
-			fmt.Sprintf("Long term (%dd left!)", 320),
-		))
-
-	return lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		dailySection,
-		separatorLine.Render(verticalBar),
-		longTermSection,
-	)
+	return m.renderDailyGrid(dailyItems, cell)
 }
