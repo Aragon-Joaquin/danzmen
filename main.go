@@ -28,8 +28,6 @@ func main() {
 		return
 	}
 
-	names := cfg.GetTasksNonRepeatableNames()
-
 	//NOTE: call the db to obtain the values
 	sdb, err := db.Init()
 	if err != nil {
@@ -37,8 +35,10 @@ func main() {
 	}
 
 	dbTasks := []*db.DBJoin_Daily{}
-	if len(names) > 0 {
-		if dbTasks, err = sdb.CreateIfNotExistsTasks(names); err != nil {
+	dailyNames := cfg.GetTasksNonRepeatableNames()
+
+	if len(dailyNames) > 0 {
+		if dbTasks, err = sdb.CreateIfNotExistsTasks(dailyNames); err != nil {
 			log.Fatalln("CreateIfNotExists: ", err.Error())
 		}
 	}
@@ -48,10 +48,18 @@ func main() {
 		return
 	}
 
-	itemsToRender := []tui.DZTask{}
+	dailyToRender := []tui.DZTask{}
 	if len(dbTasks) > 0 {
-		for _, v := range tui.CreateMultipleDZItem(dbTasks...) {
-			itemsToRender = append(itemsToRender, v)
+		for _, v := range tui.CreateMultipleDZTask(dbTasks...) {
+			dailyToRender = append(dailyToRender, v)
+		}
+	}
+
+	longTerm := cfg.GetNonRepetableLongTermTasks()
+	longToRender := []tui.DZLongTask{}
+	if len(longTerm) > 0 {
+		for _, v := range tui.CreateMultipleDZTask(dbTasks...) {
+			dailyToRender = append(dailyToRender, v)
 		}
 	}
 
@@ -59,9 +67,9 @@ func main() {
 	var model tui.TuiModel
 	switch f.Type {
 	case flags.PROGRAM_CHECK:
-		model = tui.CreateTUIModel(itemsToRender, sdb, false)
+		model = tui.CreateTUIModel(dailyToRender, longToRender, sdb, false)
 	case flags.PROGRAM_LIST:
-		model = tui.CreateTUIModel(itemsToRender, sdb, true)
+		model = tui.CreateTUIModel(dailyToRender, longToRender, sdb, true)
 	default:
 		panic("invalid option")
 	}

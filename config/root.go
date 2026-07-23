@@ -15,8 +15,18 @@ type Cfg struct {
 	Start string `toml:"start"`
 
 	//specific cfg
-	Day  map[ty.DAYS_PER_WEEK]GenericScheduleCfg `toml:"day"`
-	Loop map[string]GenericScheduleCfg           `toml:"loop"`
+	Day  map[ty.DAYS_PER_WEEK]ty.GenericScheduleCfg `toml:"day"`
+	Loop map[string]ty.GenericScheduleCfg           `toml:"loop"`
+
+	LongTerm struct {
+		Tasks []ty.LongTermTasksCfg
+	} `toml:"longterm"`
+}
+
+func generateDefaultCFGFile() *Cfg {
+	return &Cfg{
+		Start: "sunday",
+	}
 }
 
 const (

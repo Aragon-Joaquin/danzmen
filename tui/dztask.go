@@ -15,7 +15,7 @@ type DZTask interface {
 	ReturnCheckboxString() string
 }
 
-func CreateMultipleDZItem(d ...*db.DBJoin_Daily) []DZTask {
+func CreateMultipleDZTask(d ...*db.DBJoin_Daily) []DZTask {
 	var dzitem = []DZTask{}
 	for _, v := range d {
 		dzitem = append(dzitem, &task{
@@ -25,12 +25,6 @@ func CreateMultipleDZItem(d ...*db.DBJoin_Daily) []DZTask {
 		})
 	}
 	return dzitem
-}
-
-func CreateDZItem(d *db.DBJoin_Daily) DZTask {
-	return &task{id: d.DBDaily_Task.Id, title: d.DBDaily_Task.Name,
-		completed: ty.DBIntToBool(d.Completed),
-	}
 }
 
 type task struct {

@@ -33,7 +33,7 @@ type listItem struct {
 	id   int
 }
 
-func CreateDZList(i []DZTask, s styles, w, h int) DZList {
+func CreateDZList(i []DZTask, l []DZLongTask, s styles, w, h int) DZList {
 	//put an index for each
 	var listTasks = []listItem{}
 	for idx, v := range i {
@@ -217,6 +217,8 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 	return len(l.items), completed
 }
 
+// func (l *listModel) SelectLLTNextToExpire(){}
+
 const (
 	MINIMUM_WIDTH_REQUIRED             = 80
 	MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED = 160
@@ -285,11 +287,11 @@ func (m *listModel) View() string {
 	var titlePadding int = 0
 
 	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
+	cWidth = m.w / 2
 	if m.w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
-		cWidth = (m.w / 2) / 2 // half the width - 4 (padding) / 2 (items horizontally)
+		cWidth = cWidth / 2 // half the width / 2 (items horizontally)
 		titlePadding = (m.w - 8) / 2
 	} else {
-		cWidth = m.w
 		titlePadding = m.w - 4
 	}
 
@@ -312,7 +314,7 @@ func (m *listModel) View() string {
 				dailyTitleHalf.Width(widthForTitle).Render(dailyText),
 				lttNotify.Width(widthForTitle).Render("LTT Ends in: 123d"),
 			),
-			borderBottom.Width(m.w).Render(),
+			borderBottom.Width(m.w-1).Render(),
 			cellsRendered,
 		)
 	}
@@ -331,7 +333,7 @@ func (m *listModel) View() string {
 		r_tasks,
 	)
 
-	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 12), "\n")
+	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 10), "\n")
 
 	longTermSection := lipgloss.JoinVertical(
 		lipgloss.Center,

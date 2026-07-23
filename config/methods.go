@@ -30,3 +30,26 @@ func (c *Cfg) GetTasksNonRepeatableNames() []string {
 
 	return names
 }
+
+func (c *Cfg) GetNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
+	mapNames := map[string]ty.LongTermTasksCfg{}
+
+	for _, t := range c.LongTerm.Tasks {
+		if t.Name == "" {
+			continue
+		}
+
+		if _, ok := mapNames[t.Name]; ok {
+			continue
+		}
+
+		mapNames[t.Name] = t
+	}
+
+	m := []ty.LongTermTasksCfg{}
+	for _, v := range mapNames {
+		m = append(m, v)
+	}
+
+	return m
+}

@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	ty "danzmen/types"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -21,6 +22,14 @@ type DBDaily_Record struct {
 type DBJoin_Daily struct {
 	*DBDaily_Task
 	*DBDaily_Record
+}
+
+type DBLong_Tasks struct {
+	Id           int
+	Name         string
+	Expires_in   sql.NullString
+	Priority     ty.PRIORITY_TYPES
+	Completed_at sql.NullString
 }
 
 // NOTE: repository
@@ -121,6 +130,11 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 
 	res := []*DBJoin_Daily{}
 	for r.Next() {
+		//TODO: log this or return error?
+		if r.Err() != nil {
+			continue
+		}
+
 		t := &DBJoin_Daily{}
 		dt := &DBDaily_Task{}
 		dr := &DBDaily_Record{}
@@ -137,4 +151,70 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	}
 
 	return res, nil
+}
+
+func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*DBLong_Tasks, error) {
+	if len(tasks) == 0 {
+		return nil, fmt.Errorf("Not enough long term tasks")
+	}
+
+	//validate if they're correctly parsed
+	for _, t := range tasks {
+		_, _, err := t.ValidateExpires_In()
+		if err != nil {
+			return nil, err
+		}
+
+		if err := t.ValidatePriority(); err != nil {
+			return nil, err
+		}
+	}
+
+	ctx := context.Background()
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	defer tx.Rollback()
+
+	//then insert. ignore if they're dups.
+	q1 := `insert or ignore into long_tasks(id, name, expires_in, priority) values(NULL, ?, ?, ?);`
+
+	n := []any{}
+	for _, t := range tasks {
+		_, _ = tx.ExecContext(ctx, q1, t.Name, t.Ends, t.Priority)
+		n = append(n, t.Name)
+	}
+
+	if err := tx.Commit(); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	//and select them
+	q2 := fmt.Sprintf(
+		`select id, name, expires_in, priority, completed_at from daily_tasks where name = (?%s)`,
+		strings.Repeat(", ?", len(n)-1))
+
+	r, err := s.db.QueryContext(ctx, q2, n...)
+	if err != nil {
+		return nil, err
+	}
+
+	DBTask := []*DBLong_Tasks{}
+	for r.Next() {
+		if r.Err() != nil {
+			continue
+		}
+		t := DBLong_Tasks{}
+
+		if err := r.Scan(&t.Id, &t.Name, &t.Expires_in, &t.Priority, &t.Completed_at); err != nil {
+			return nil, err
+		}
+
+		DBTask = append(DBTask, &t)
+	}
+
+	return DBTask, nil
 }

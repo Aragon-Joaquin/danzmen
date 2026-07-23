@@ -21,13 +21,14 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func CreateTUIModel(i []DZTask, db *db.SqliteDB, q bool) TuiModel {
+func CreateTUIModel(i []DZTask, longTerm []DZLongTask, db *db.SqliteDB, q bool) TuiModel {
 	mTui := TuiModel{
 		db:              db,
 		quitImmediately: q,
 		w:               DEFAULT_WIDTH,
 		h:               LIST_HEIGHT,
-		list:            CreateDZList(i, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		//TODO: separate both daily and long in differents lists
+		list: CreateDZList(i, longTerm, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 	}
 
 	return mTui
