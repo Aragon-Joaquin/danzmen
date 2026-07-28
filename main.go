@@ -6,8 +6,10 @@ import (
 	"danzmen/flags"
 	"danzmen/tui"
 	"log"
+	"os"
 
 	tea "charm.land/bubbletea/v2"
+	xterm "github.com/charmbracelet/x/term"
 )
 
 func main() {
@@ -66,16 +68,19 @@ func main() {
 	}
 
 	//NOTE: start painting UI
-	var model tui.TuiModel
-	switch f.Type {
-	case flags.PROGRAM_CHECK:
-		model = tui.CreateTUIModel(dailyToRender, longToRender, sdb, false)
-	case flags.PROGRAM_LIST:
-		model = tui.CreateTUIModel(dailyToRender, longToRender, sdb, true)
-	default:
-		panic("invalid option")
+	if f.Type == flags.PROGRAM_LIST {
+		w, h, err := xterm.GetSize(os.Stdout.Fd())
+		if err != nil {
+			log.Fatalln(err)
+		}
+		// sure, my terminal has 4px of padding
+		// this is the worst. remake this in lua. please
+		s := tui.RenderList(dailyToRender, longToRender, w-4, h)
+		os.Stdout.WriteString(s)
+		return
 	}
 
+	model := tui.CreateTUIModel(dailyToRender, longToRender, sdb)
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		log.Panicf("Error running program: %e \n", err)

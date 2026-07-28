@@ -9,12 +9,11 @@ import (
 )
 
 type TuiModel struct {
-	db              *db.SqliteDB
-	quitImmediately bool
-	w               int
-	h               int
-	daily_list      DZList
-	long_list       DZList
+	db         *db.SqliteDB
+	w          int
+	h          int
+	daily_list DZList
+	long_list  DZList
 }
 
 const (
@@ -22,23 +21,25 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func CreateTUIModel(daily []DZTask, long []DZLongTask, db *db.SqliteDB, q bool) TuiModel {
+func RenderList(daily []DZTask, long []DZLongTask, w, h int) string {
+	daily_list := CreateDZList(daily, NewSimpleStyle(), w, h)
+	long_list := CreateDZLongList(long, NewSimpleStyle(), w, h)
+	return RenderModelView(daily_list, long_list, w, h)
+}
+
+func CreateTUIModel(daily []DZTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
 	mTui := TuiModel{
-		db:              db,
-		quitImmediately: q,
-		w:               DEFAULT_WIDTH,
-		h:               LIST_HEIGHT,
-		daily_list:      CreateDZList(daily, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
-		long_list:       CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		db:         db,
+		w:          DEFAULT_WIDTH,
+		h:          LIST_HEIGHT,
+		daily_list: CreateDZList(daily, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		long_list:  CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 	}
 
 	return mTui
 }
 
 func (m TuiModel) Init() tea.Cmd {
-	if m.quitImmediately {
-		return tea.Quit
-	}
 	return nil
 }
 
@@ -88,8 +89,6 @@ func (m TuiModel) View() tea.View {
 	c := container.Width(m.w).MarginTop(1).Padding(0)
 
 	v := tea.NewView(c.Render(RenderModelView(m.daily_list, m.long_list, m.w, m.h)))
-	if !m.quitImmediately {
-		v.AltScreen = true
-	}
+	v.AltScreen = true
 	return v
 }
