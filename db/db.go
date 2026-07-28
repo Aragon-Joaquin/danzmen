@@ -47,7 +47,7 @@ func (s *SqliteDB) createDatabase() error {
 	CREATE TABLE IF NOT EXISTS long_tasks(
 		id integer PRIMARY KEY,
 		name text not null unique,
-		expires_in text default(date('now','+7 days')),
+   	expires_in text default(strftime('%m/%d/%Y', 'now', '+7 days')),
 		priority text not null check(priority IN ('low', 'med', 'high')) default('low'),
 		completed_at text null
 	);

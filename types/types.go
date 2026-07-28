@@ -25,6 +25,11 @@ const (
 	SATURDAY  DAYS_PER_WEEK = "saturday"
 )
 
+const (
+	MM_DD_YYYY = "01/02/2006" // <- only support this for now
+	//DD_MM_YYYY = "02/01/2006"
+)
+
 func GetTodaysDayName() DAYS_PER_WEEK {
 	return ValidateDayOfTheWeek(time.Now().Weekday().String())
 }

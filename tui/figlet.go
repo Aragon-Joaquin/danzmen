@@ -1,6 +1,5 @@
 package tui
 
-// TODO: use or delete this
 var (
 	FLASH_FIGLET = `
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀

@@ -55,12 +55,14 @@ func main() {
 		}
 	}
 
-	longTerm := cfg.GetNonRepetableLongTermTasks()
+	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetNonRepetableLongTermTasks())
+	if err != nil {
+		log.Fatalln("InsertOrSelectLongTermTasks: ", err)
+	}
+
 	longToRender := []tui.DZLongTask{}
-	if len(longTerm) > 0 {
-		for _, v := range tui.CreateMultipleDZTask(dbTasks...) {
-			dailyToRender = append(dailyToRender, v)
-		}
+	for _, v := range tui.CreateMultipleDZLongTask(ltt...) {
+		longToRender = append(longToRender, v)
 	}
 
 	//NOTE: start painting UI

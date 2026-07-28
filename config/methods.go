@@ -2,6 +2,7 @@ package config
 
 import (
 	ty "danzmen/types"
+	"log"
 	"strings"
 )
 
@@ -48,6 +49,17 @@ func (c *Cfg) GetNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
 
 	m := []ty.LongTermTasksCfg{}
 	for _, v := range mapNames {
+		//validate if they're correctly parsed
+		if err := v.ValidateExpires_In(); err != nil {
+			log.Fatalln(err)
+			return nil
+		}
+
+		if err := v.ValidatePriority(); err != nil {
+			log.Fatalln(err)
+			return nil
+		}
+
 		m = append(m, v)
 	}
 

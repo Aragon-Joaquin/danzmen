@@ -158,18 +158,6 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*
 		return nil, fmt.Errorf("Not enough long term tasks")
 	}
 
-	//validate if they're correctly parsed
-	for _, t := range tasks {
-		_, _, err := t.ValidateExpires_In()
-		if err != nil {
-			return nil, err
-		}
-
-		if err := t.ValidatePriority(); err != nil {
-			return nil, err
-		}
-	}
-
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -183,7 +171,7 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*
 
 	n := []any{}
 	for _, t := range tasks {
-		_, _ = tx.ExecContext(ctx, q1, t.Name, t.Ends, t.Priority)
+		_, _ = tx.ExecContext(ctx, q1, t.Name, t.MM_DD_YYYY_DATE, t.Priority)
 		n = append(n, t.Name)
 	}
 
@@ -194,7 +182,7 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*
 
 	//and select them
 	q2 := fmt.Sprintf(
-		`select id, name, expires_in, priority, completed_at from daily_tasks where name = (?%s)`,
+		`select id, name, expires_in, priority, completed_at from long_tasks where name = (?%s)`,
 		strings.Repeat(", ?", len(n)-1))
 
 	r, err := s.db.QueryContext(ctx, q2, n...)

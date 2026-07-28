@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -33,7 +34,7 @@ var (
 			Padding(0, 2)
 
 	cStyle = lipgloss.NewStyle().
-		MarginLeft(3).
+		Margin(0, 1).
 		Height(2).
 		MaxHeight(2)
 
@@ -41,7 +42,12 @@ var (
 			Foreground(lipgloss.BrightBlack).
 			AlignHorizontal(lipgloss.Center)
 
-		//simple UI - half the screen
+	lttTitle    = lipgloss.NewStyle()
+	lttidxbox   = idx_box.Foreground(lipgloss.BrightRed)
+	lttPriority = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1)
+	lttEnds     = lipgloss.NewStyle()
+
+	//simple UI - half the screen
 	lttNotify = lipgloss.NewStyle().
 			AlignHorizontal(lipgloss.Right).
 			Foreground(lipgloss.BrightRed).
@@ -55,6 +61,8 @@ var (
 	borderBottom = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder(), true, false, false, false).
 			BorderForeground(lipgloss.Yellow)
+
+	ltt_empty_task_placeholder = "Nothing to worry about"
 )
 
 func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
@@ -64,12 +72,12 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 
 	var ll *listModel = &listModel{}
 	if lm, ok := longI.(*listModel); ok {
-		longI = lm
+		ll = lm
 	}
 
 	var dl *listModel = &listModel{}
 	if lm, ok := dailyI.(*listModel); ok {
-		dailyI = lm
+		dl = lm
 	}
 
 	dailyItems := dl.selectDailyTasksCompletedAndFill()
@@ -81,7 +89,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 	var titlePadding int
 
 	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
-	cWidth = w / 2
+	cWidth = (w / 2) - 2 // 2 for padding
 
 	if w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
 		cWidth = cWidth / 2
@@ -100,16 +108,22 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 		hasItemsPosition = lipgloss.Center
 	}
 
+	_, dd, ok := findLongTaskWithLeastDaysOfCompletion(ll)
 	//NOTE: render simple ui
 	if w < MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
 		widthForTitle := (w - 4) / 2
+
+		var nearest_task_placeholder = ltt_empty_task_placeholder
+		if ok {
+			nearest_task_placeholder = fmt.Sprintf("Next LTT ends in: %dd", dd)
+		}
 
 		return lipgloss.JoinVertical(
 			lipgloss.Center,
 			lipgloss.JoinHorizontal(
 				hasItemsPosition,
 				dailyTitleHalf.Width(widthForTitle).Render(dailyText),
-				lttNotify.Width(widthForTitle).Render(fmt.Sprintf("Next LTT ends in: %s", "lol")),
+				lttNotify.Width(widthForTitle).Render(nearest_task_placeholder),
 			),
 			borderBottom.Width(w-1).Render(),
 			cellsRendered,
@@ -134,34 +148,33 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 
 	var longRows []string
 	for _, li := range ll.items {
-		if lt, ok := li.item.(DZLongTask); ok {
-			icon := "[ ]"
-			if lt.Completed() {
-				icon = "[x]"
-			}
-			row := fmt.Sprintf("%s %s (ends: %s)", icon, lt.TitleEllipsis(22), lt.EndsOn())
-			longRows = append(longRows, row)
-		} else {
-			icon := "[ ]"
-			if li.item.Completed() {
-				icon = "[x]"
-			}
-			row := fmt.Sprintf("%s %s", icon, li.item.TitleEllipsis(22))
-			longRows = append(longRows, row)
+		lt, ok := li.item.(DZLongTask)
+		if !ok {
+			continue
 		}
+		icon := lt.ReturnCheckboxString()
+
+		row := cStyle.Height(1).Width((cWidth*2)-1).Render(
+			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
+			lttTitle.Width(int(float64(cWidth)*1.4)).Render(lt.TitleEllipsis(22)),
+			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
+			lttEnds.Render(fmt.Sprintf("%.0fd", lt.EndsOnXHours())),
+		)
+
+		longRows = append(longRows, row)
 	}
 
 	longContent := strings.Join(longRows, "\n")
 	if longContent == "" {
-		longContent = "No long-term tasks"
+		longContent = lipgloss.NewStyle().Render(ltt_empty_task_placeholder)
 	}
 
 	longTermSection := lipgloss.JoinVertical(
 		lipgloss.Center,
 		longTermTitle.Width(titlePadding).Render(
-			fmt.Sprintf("Long term (%dd left!)", 320),
+			fmt.Sprintf("Long term (%dd left!)", dd),
 		),
-		lipgloss.NewStyle().PaddingLeft(2).Render(longContent),
+		lipgloss.NewStyle().PaddingRight(2).Render(longContent),
 	)
 
 	return lipgloss.JoinHorizontal(
@@ -170,4 +183,35 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 		separatorLine.Render(verticalBar),
 		longTermSection,
 	)
+}
+
+// WARN: PRIVATE
+// find the task with the least days to be completed
+func findLongTaskWithLeastDaysOfCompletion(ll *listModel) (selectedTask DZLongTask, days_diff int, ok bool) {
+	var nearestDate time.Time
+	now := time.Now()
+
+	selectedTask = nil
+	ok = false
+	days_diff = -1
+
+	for _, li := range ll.items {
+		lt, ok := li.item.(DZLongTask)
+		if !ok {
+			continue
+		}
+
+		t, err := lt.MM_DD_YYYY_Format()
+		if err != nil {
+			continue
+		}
+
+		if t.After(now) && (nearestDate.IsZero() || t.Before(nearestDate)) {
+			selectedTask = lt
+			ok = true
+			days_diff = int(t.Sub(now).Hours() / 24)
+		}
+	}
+
+	return
 }
