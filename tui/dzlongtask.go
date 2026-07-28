@@ -3,6 +3,7 @@ package tui
 import (
 	"danzmen/db"
 	ty "danzmen/types"
+	"fmt"
 	"image/color"
 	"strings"
 	"time"
@@ -19,7 +20,7 @@ type DZLongTask interface {
 
 	//helpers
 	MM_DD_YYYY_Format() (time.Time, error)
-	EndsOnXHours() float64
+	HumanReadableEndsIn() string
 	RenderPriority() string
 	PriorityBGColor() color.Color
 }
@@ -59,17 +60,6 @@ func (l *longTask) MM_DD_YYYY_Format() (time.Time, error) {
 	return time.Parse(ty.MM_DD_YYYY, l.expires_in)
 }
 
-func (l *longTask) EndsOnXHours() float64 {
-	now := time.Now()
-
-	t, err := l.MM_DD_YYYY_Format()
-	if err != nil {
-		return -1
-	}
-
-	return t.Sub(now).Hours()
-}
-
 func (l *longTask) RenderPriority() string {
 	return strings.ToUpper(string(l.priority))
 }
@@ -85,4 +75,35 @@ func (l *longTask) PriorityBGColor() color.Color {
 	}
 
 	return lipgloss.Black
+}
+
+const (
+	hours_to_be_considered_not_that_urgent = 72
+)
+
+// more easy to follow up
+func (l *longTask) HumanReadableEndsIn() string {
+	h := l.endsOnXHours()
+
+	if h == -1 {
+		return "???d"
+	}
+
+	if h > hours_to_be_considered_not_that_urgent {
+		return fmt.Sprintf("%.0fd", h/24)
+	}
+
+	return fmt.Sprintf("%.2fh", h)
+}
+
+// WARN: private
+func (l *longTask) endsOnXHours() float64 {
+	now := time.Now()
+
+	t, err := l.MM_DD_YYYY_Format()
+	if err != nil {
+		return -1
+	}
+
+	return t.Sub(now).Hours()
 }

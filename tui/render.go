@@ -21,8 +21,7 @@ var (
 
 	dailyTitle = baseTitleStyle.
 			BorderForeground(lipgloss.Yellow).
-			Foreground(lipgloss.Yellow).
-			MarginLeft(2)
+			Foreground(lipgloss.Yellow).MarginLeft(2)
 
 	longTermTitle = baseTitleStyle.
 			BorderForeground(lipgloss.Red).
@@ -144,7 +143,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 		r_tasks,
 	)
 
-	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 10), "\n")
+	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 14), "\n")
 
 	var longRows []string
 	for _, li := range ll.items {
@@ -158,7 +157,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
 			lttTitle.Width(int(float64(cWidth)*1.4)).Render(lt.TitleEllipsis(22)),
 			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
-			lttEnds.Render(fmt.Sprintf("%.0fd", lt.EndsOnXHours())),
+			lttEnds.Render(lt.HumanReadableEndsIn()),
 		)
 
 		longRows = append(longRows, row)
@@ -174,7 +173,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 		longTermTitle.Width(titlePadding).Render(
 			fmt.Sprintf("Long term (%dd left!)", dd),
 		),
-		lipgloss.NewStyle().PaddingRight(2).Render(longContent),
+		lipgloss.NewStyle().Render(longContent),
 	)
 
 	return lipgloss.JoinHorizontal(

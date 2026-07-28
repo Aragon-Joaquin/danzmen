@@ -73,9 +73,8 @@ func main() {
 		if err != nil {
 			log.Fatalln(err)
 		}
-		// sure, my terminal has 4px of padding
-		// this is the worst. remake this in lua. please
-		s := tui.RenderList(dailyToRender, longToRender, w-4, h)
+
+		s := tui.RenderList(dailyToRender, longToRender, w, h)
 		os.Stdout.WriteString(s)
 		return
 	}

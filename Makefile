@@ -13,7 +13,10 @@ build:
 install: 
 	ln -sf $(CURDIR)/danzmen /bin/danzmen
 
+del-db:
+	rm ~/.local/share/danzmen/danzmen.db
+
 clean:
 	@echo "cleaned"
 
-.PHONY: all watch test clean build install
+.PHONY: all watch test clean build install del-db
