@@ -50,9 +50,9 @@ func main() {
 		return
 	}
 
-	monthlyToRender := []tui.DZTask{}
+	monthlyToRender := []tui.DZMonthlyTask{}
 	if len(monthlyDBTasks) > 0 {
-		for _, v := range tui.CreateMultipleDZTask(monthlyDBTasks...) {
+		for _, v := range tui.CreateMultipleDZMonthlyTask(monthlyDBTasks...) {
 			monthlyToRender = append(monthlyToRender, v)
 		}
 	}
@@ -75,7 +75,8 @@ func main() {
 		}
 
 		s := tui.RenderList(monthlyToRender, longToRender, w, h)
-		os.Stdout.WriteString(s)
+		c := tui.CONTAINER_FOR_TOGGLE
+		os.Stdout.WriteString(c.Render(s))
 		return
 	}
 

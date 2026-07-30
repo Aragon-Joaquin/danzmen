@@ -16,7 +16,7 @@ func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_Monthly) 
 	}
 
 	for _, v := range dbTasks {
-		if v.Id == id {
+		if v.DBMonthly_Task.Id == id {
 			var c int = 0
 			if v.Completed == 0 {
 				c = 1

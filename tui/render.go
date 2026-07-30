@@ -53,9 +53,9 @@ var (
 			MarginRight(2)
 
 	monthlyTitleHalf = monthlyTitle.
-			Border(lipgloss.Border{}, false).
-			AlignHorizontal(lipgloss.Left).
-			MarginLeft(2)
+				Border(lipgloss.Border{}, false).
+				AlignHorizontal(lipgloss.Left).
+				MarginLeft(2)
 
 	borderBottom = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder(), true, false, false, false).
@@ -99,8 +99,8 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		ml.SetWidth(w)
 	}
 
-	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
-	cellsRendered := ml.renderMonthlyGrid(monthlyItems, cell)
+	cellsRendered := ml.renderMonthlyGrid(monthlyItems,
+		cStyle.Width(cWidth).MaxWidth(cWidth))
 
 	var hasItemsPosition lipgloss.Position = lipgloss.Left
 	if len(cellsRendered) > 0 {
@@ -195,8 +195,8 @@ func findLongTaskWithLeastDaysOfCompletion(ll *listModel) (selectedTask DZLongTa
 	days_diff = -1
 
 	for _, li := range ll.items {
-		lt, ok := li.item.(DZLongTask)
-		if !ok {
+		lt, k := li.item.(DZLongTask)
+		if !k {
 			continue
 		}
 

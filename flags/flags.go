@@ -47,7 +47,7 @@ func printHelp() *ProgramOpts {
 	fmt.Println(`Usage for `, os.Args[0], `: 
 	- [program] help		This screen
 	- [program] list		Output a simple screen of the tasks today
-	- [program] check		Enter in a tui to check on/off tasks
+	- [program] check		(UNFINISHED) Enter in a tui to check on/off tasks
 	- [program] toggle {id}		Check/uncheck a today's task
 	`)
 	return &ProgramOpts{Type: PROGRAM_HELP}

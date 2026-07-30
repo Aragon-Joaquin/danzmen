@@ -6,7 +6,7 @@
 - [x] make different list delegates (simple and check)
 - [ ] make a streak popup. add a sql table called "monthly_progress" to store it. [x] on selectOrCreate query dont increment id if it failed silently
 - [x] make the flags on main more easily manageable
-- [ ] make height be same as the list height IF list.height() < MAX_HEIGHT
+- [x] make height be same as the list height IF list.height() < MAX_HEIGHT
 - [x] stop using bubbles/list and make my own components
 - [x] add a secondary list for long term tasks. ex: 
 
@@ -22,6 +22,7 @@
 - [x] restart tasks state per month
 - [x] show non completed tasks first
 - [ ] optimze db (create indexes)
+- [ ] orm??? or use a pattern to fix this mess lol
 - [ ] make estimates on how many times needs to be done per week (└─>)
 - [x] allow both ONCE or repetitive tasks. ex:
     - \["shower", "lose 10kg"\]
@@ -31,6 +32,10 @@
 - [ ] make possible to add custom priority/metatags + colors
 - [ ] make a notification of which tasks were pending last month
 - [ ] make option to disable alerts about unrecognizable fields
+- [ ] finish "check" mode with:
+    - [ ] paginator
+    - [ ] keymap help
+- [ ] customize the float precision of the monthly_times_done
 
 ## danzmen
 more like a tui agenda using a .toml config file.

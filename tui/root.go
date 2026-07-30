@@ -9,11 +9,11 @@ import (
 )
 
 type TuiModel struct {
-	db         *db.SqliteDB
-	w          int
-	h          int
+	db           *db.SqliteDB
+	w            int
+	h            int
 	monthly_list DZList
-	long_list  DZList
+	long_list    DZList
 }
 
 const (
@@ -21,19 +21,19 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func RenderList(monthly []DZTask, long []DZLongTask, w, h int) string {
+func RenderList(monthly []DZMonthlyTask, long []DZLongTask, w, h int) string {
 	monthly_list := CreateDZList(monthly, NewSimpleStyle(), w, h)
 	long_list := CreateDZLongList(long, NewSimpleStyle(), w, h)
 	return RenderModelView(monthly_list, long_list, w, h)
 }
 
-func CreateTUIModel(monthly []DZTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
+func CreateTUIModel(monthly []DZMonthlyTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
 	mTui := TuiModel{
-		db:         db,
-		w:          DEFAULT_WIDTH,
-		h:          LIST_HEIGHT,
+		db:           db,
+		w:            DEFAULT_WIDTH,
+		h:            LIST_HEIGHT,
 		monthly_list: CreateDZList(monthly, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
-		long_list:  CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		long_list:    CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 	}
 
 	return mTui
@@ -79,16 +79,19 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 var (
-	container = lipgloss.
-		NewStyle().
+	CONTAINER_FOR_TOGGLE = lipgloss.
+				NewStyle().
+				Margin(1, 0).
+				Padding(0)
+
+	c = CONTAINER_FOR_TOGGLE.
 		Height(LIST_HEIGHT).
 		MaxHeight(LIST_HEIGHT)
 )
 
 func (m TuiModel) View() tea.View {
-	c := container.Width(m.w).MarginTop(1).Padding(0)
-
-	v := tea.NewView(c.Render(RenderModelView(m.monthly_list, m.long_list, m.w, m.h)))
+	v := tea.NewView(
+		c.Render(RenderModelView(m.monthly_list, m.long_list, m.w, m.h)))
 	v.AltScreen = true
 	return v
 }

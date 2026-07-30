@@ -53,7 +53,7 @@ func CreateDZLongList(items []DZLongTask, s styles, w, h int) DZList {
 	}
 }
 
-func CreateDZList(i []DZTask, s styles, w, h int) DZList {
+func CreateDZList(i []DZMonthlyTask, s styles, w, h int) DZList {
 	//put an index for each
 	var listTasks = []listItem{}
 	for idx, v := range i {
@@ -202,6 +202,14 @@ var (
 	)
 )
 
+const (
+	max_char_until_ellipsis = 22
+)
+
+var (
+	monthly_times_done = lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)
+)
+
 func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string {
 	if len(items) == 0 {
 		return figlet_art
@@ -210,21 +218,41 @@ func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 	var renderedCells []string
 	for _, i := range items {
 		idx_cmp := idx_box.Foreground(lipgloss.Yellow)
-		title_cmp := lipgloss.NewStyle()
+		title_cmp := lipgloss.NewStyle().Width(max_char_until_ellipsis)
+
 		if i.item.Completed() {
 			idx_cmp = idx_cmp.Foreground(lipgloss.BrightBlack)
 			title_cmp = title_cmp.Foreground(lipgloss.BrightBlack)
 		}
 
-		renderedCells = append(renderedCells,
-			c.Render(
-				idx_cmp.Render(
-					fmt.Sprintf("%s %d)",
-						i.item.ReturnCheckboxString(), i.item.ID()),
-				),
-				title_cmp.Render(i.item.TitleEllipsis(22)),
+		main_body := lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			idx_cmp.Render(
+				fmt.Sprintf("%s %d)",
+					i.item.ReturnCheckboxString(), i.item.ID()),
 			),
+			title_cmp.Render(i.item.TitleEllipsis(max_char_until_ellipsis)),
 		)
+
+		if mTask, ok := i.item.(DZMonthlyTask); ok && mTask.TimesTotal() > 0 {
+			renderedCells = append(renderedCells,
+				c.Render(
+					lipgloss.JoinVertical(
+						lipgloss.Center,
+						main_body,
+						monthly_times_done.Render(fmt.Sprintf(
+							"└─> %2.f / %1.f%s", mTask.CurrentProgress(), mTask.TimesTotal(), mTask.Metric()),
+						),
+					),
+				),
+			)
+
+			continue
+		}
+
+		renderedCells = append(renderedCells,
+			c.Render(main_body))
+
 	}
 
 	var rows []string
@@ -255,7 +283,7 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 
 const (
 	AT_LEAST_NUMBER_OF_MONTHLY_TASKS = 8
-	MAX_PER_ROW                    = 2
+	MAX_PER_ROW                      = 2
 )
 
 func (m *listModel) View() string {

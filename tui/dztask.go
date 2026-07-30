@@ -1,8 +1,6 @@
 package tui
 
 import (
-	"danzmen/db"
-	ty "danzmen/types"
 	"fmt"
 )
 
@@ -13,18 +11,6 @@ type DZTask interface {
 
 	TitleEllipsis(length int) string
 	ReturnCheckboxString() string
-}
-
-func CreateMultipleDZTask(d ...*db.DBJoin_Monthly) []DZTask {
-	var dzitem = []DZTask{}
-	for _, v := range d {
-		dzitem = append(dzitem, &task{
-			id:        v.DBMonthly_Task.Id,
-			title:     v.DBMonthly_Task.Name,
-			completed: ty.DBIntToBool(v.Completed),
-		})
-	}
-	return dzitem
 }
 
 type task struct {

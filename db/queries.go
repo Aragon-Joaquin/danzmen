@@ -6,65 +6,64 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // NOTE: tables
 type DBMonthly_Task struct {
-	Id   int
-	Name string
+	Id         int
+	Name       string
+	Times_Done sql.NullFloat64
 }
 type DBMonthly_Record struct {
-	Date      string
-	MonthlyId int
-	Completed int
+	Year_MonthId int
+	MonthlyId    int
+	Completed    int
 }
 
 type DBJoin_Monthly struct {
 	*DBMonthly_Task
 	*DBMonthly_Record
+	*DBYear_Month
+
+	ty.MonthlyTasksCfg
 }
 
 type DBLong_Tasks struct {
 	Id           int
 	Name         string
 	Expires_in   sql.NullString
-	Priority     ty.PRIORITY_TYPES
+	Times_Done   sql.NullFloat64
 	Completed_at sql.NullString
+
+	ty.LongTermTasksCfg
+}
+
+type DBYear_Month struct {
+	Id    int
+	Year  int
+	Month int
 }
 
 // NOTE: repository
-func (s *SqliteDB) InsertTask(name string) (*DBMonthly_Task, error) {
+func (s *SqliteDB) insertOrSelectYear_MonthID(date time.Time) (int, error) {
 	ctx := context.Background()
-	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 
-	defer tx.Rollback()
+	q := `
+		insert into year_month (month_int, year) 
+		values (?, ?) 
+		on conflict(month_int, year) 
+			do update set month_int = excluded.month_int
+		returning id;
+	`
 
+	var id int
+	err := s.db.QueryRowContext(ctx, q, int(date.Month()), date.Year()).Scan(&id)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 
-	q1 := `insert into monthly_tasks(id, name) values (NULL, ?) returning id,name;`
-	r := tx.QueryRowContext(ctx, q1, name)
-
-	if err := r.Err(); err != nil {
-		return nil, err
-	}
-
-	t := &DBMonthly_Task{}
-	if err := r.Scan(&t.Id, &t.Name); err != nil {
-		return nil, err
-	}
-
-	q2 := `insert into monthly_record(monthly_id) values (?);`
-	if _, err := tx.ExecContext(ctx, q2, t.Id); err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, err
-	}
-
-	return t, nil
+	return id, nil
 }
 
 func (s *SqliteDB) UpdateCompletedTask(id int, completed int) error {
@@ -89,20 +88,31 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 	// create values or ignore errors
 	// select the the values
 	// insert them into monthly_record
-	q1 := `insert or ignore into monthly_tasks(id, name) values(NULL, ?);`
-	q1_5 := `select id from monthly_tasks where name = (?)`
-	q2 := `insert or ignore into monthly_record(monthly_id, date) values(?, date());`
+	q1 := `insert into monthly_tasks(name) values(?) 
+	       on conflict(name) do update set name=name 
+	       returning id;`
+	q2 := `insert or ignore into monthly_record(monthly_id, year_month) values(?, ?);`
 
-	for _, n := range t {
-		s := n.Name
-		_, _ = tx.ExecContext(ctx, q1, s)
+	ym_id, err := s.insertOrSelectYear_MonthID(time.Now())
+	if err != nil {
+		return nil, err
+	}
+
+	cfgMap := make(map[string]ty.MonthlyTasksCfg, len(t))
+
+	var args []any // preparing args for the q3
+	args = append(args, ym_id)
+
+	for _, mcfg := range t {
+		cfgMap[mcfg.Name] = mcfg
 
 		var t_id int
-		if err := tx.QueryRowContext(ctx, q1_5, s).Scan(&t_id); err != nil {
+		if err := tx.QueryRowContext(ctx, q1, mcfg.Name).Scan(&t_id); err != nil {
 			return nil, err
 		}
 
-		_, _ = tx.ExecContext(ctx, q2, t_id)
+		_, _ = tx.ExecContext(ctx, q2, t_id, ym_id)
+		args = append(args, mcfg.Name) // so we save one more iteration
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -113,49 +123,56 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 	//NOTE: SELECT QUERY
 	q3 := fmt.Sprintf(`
 	select 
-	t.id as t_id, t.name as t_name,
-	coalesce(d.date, "") as d_date, d.monthly_id as d_monthlyid, d.completed as d_completed
+	t.id as t_id, t.name as t_name, t.times_done as t_times_done,
+	ym.id as ym_id, ym.month_int as ym_month, ym.year as ym_year,
+	d.year_month as d_year_month, d.monthly_id as d_monthlyid, d.completed as d_completed
 	from monthly_tasks t
-	left join monthly_record d on d.monthly_id = t.id and d.date = date()
+	left join monthly_record d on d.monthly_id = t.id and d.year_month = ?
+	left join year_month ym on d.year_month = ym.id
 	where t.name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(t)-1))
-
-	var args []any
-	for _, n := range t {
-		args = append(args, n.Name)
-	}
 
 	r, err := s.db.QueryContext(ctx, q3, args...)
 	if err != nil {
 		return nil, err
 	}
 
+	defer r.Close()
+
 	res := []*DBJoin_Monthly{}
 	for r.Next() {
-		//TODO: log this or return error?
-		if r.Err() != nil {
-			continue
-		}
-
-		t := &DBJoin_Monthly{}
-		dt := &DBMonthly_Task{}
-		dr := &DBMonthly_Record{}
-
-		if err := r.Scan(
-			&dt.Id, &dt.Name,
-			&dr.Date, &dr.MonthlyId, &dr.Completed); err != nil {
+		if err := r.Err(); err != nil {
 			return nil, err
 		}
 
-		t.DBMonthly_Record = dr
-		t.DBMonthly_Task = dt
-		res = append(res, t)
+		dt := &DBMonthly_Task{}
+		dr := &DBMonthly_Record{}
+		ym := &DBYear_Month{}
+
+		if err := r.Scan(
+			&dt.Id, &dt.Name, &dt.Times_Done,
+			&ym.Id, &ym.Month, &ym.Year,
+			&dr.Year_MonthId, &dr.MonthlyId, &dr.Completed); err != nil {
+			return nil, err
+		}
+
+		cfg, ok := cfgMap[dt.Name]
+		if !ok {
+			continue
+		}
+
+		res = append(res, &DBJoin_Monthly{
+			DBMonthly_Task:   dt,
+			DBMonthly_Record: dr,
+			DBYear_Month:     ym,
+			MonthlyTasksCfg:  cfg,
+		})
 	}
 
 	return res, nil
 }
 
-func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*DBLong_Tasks, error) {
-	if len(tasks) == 0 {
+func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg) ([]*DBLong_Tasks, error) {
+	if len(t) == 0 {
 		return nil, fmt.Errorf("Not enough long term tasks")
 	}
 
@@ -168,22 +185,27 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*
 	defer tx.Rollback()
 
 	//then insert. ignore if they're dups.
-	q1 := `insert or ignore into long_tasks(id, name, expires_in, priority) values(NULL, ?, ?, ?);`
+	q1 := `insert or ignore into long_tasks(name, expires_in) values(?, ?);`
 
+	cfgMap := make(map[string]ty.LongTermTasksCfg, len(t))
 	n := []any{}
-	for _, t := range tasks {
-		_, _ = tx.ExecContext(ctx, q1, t.Name, t.MM_DD_YYYY_DATE, t.Priority)
-		n = append(n, t.Name)
+
+	for _, l := range t {
+		if _, err = tx.ExecContext(ctx, q1, l.Name, l.MM_DD_YYYY_DATE); err != nil {
+			return nil, err
+		}
+
+		cfgMap[l.Name] = l
+		n = append(n, l.Name)
 	}
 
 	if err := tx.Commit(); err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 
 	//and select them
 	q2 := fmt.Sprintf(
-		`select id, name, expires_in, priority, completed_at from long_tasks where name = (?%s)`,
+		`select id, name, expires_in, completed_at from long_tasks where name in (?%s)`,
 		strings.Repeat(", ?", len(n)-1))
 
 	r, err := s.db.QueryContext(ctx, q2, n...)
@@ -191,17 +213,26 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(tasks []ty.LongTermTasksCfg) ([]*
 		return nil, err
 	}
 
+	defer r.Close()
+
 	DBTask := []*DBLong_Tasks{}
 	for r.Next() {
-		if r.Err() != nil {
-			continue
-		}
-		t := DBLong_Tasks{}
-
-		if err := r.Scan(&t.Id, &t.Name, &t.Expires_in, &t.Priority, &t.Completed_at); err != nil {
+		if err := r.Err(); err != nil {
 			return nil, err
 		}
 
+		t := DBLong_Tasks{}
+
+		if err := r.Scan(&t.Id, &t.Name, &t.Expires_in, &t.Completed_at); err != nil {
+			return nil, err
+		}
+
+		a, ok := cfgMap[t.Name]
+		if !ok {
+			continue
+		}
+
+		t.LongTermTasksCfg = a
 		DBTask = append(DBTask, &t)
 	}
 
