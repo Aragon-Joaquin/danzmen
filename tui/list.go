@@ -135,53 +135,53 @@ func (l *listModel) decrementSelector() int {
 	return l.selectedId
 }
 
-// grabs up to AT_LEAST_NUMBER_OF_DAILY_TASKS (8) at prioritizes the uncompleted first
-// IF the uncompleted tasks are equal to AT_LEAST_NUMBER_OF_DAILY_TASKS then it does nothing
-// IF the uncompleted tasks are less to AT_LEAST_NUMBER_OF_DAILY_TASKS but there's no more tasks, it does nothing
+// grabs up to AT_LEAST_NUMBER_OF_MONTHLY_TASKS (8) at prioritizes the uncompleted first
+// IF the uncompleted tasks are equal to AT_LEAST_NUMBER_OF_MONTHLY_TASKS then it does nothing
+// IF the uncompleted tasks are less to AT_LEAST_NUMBER_OF_MONTHLY_TASKS but there's no more tasks, it does nothing
 // IF the uncompleted tasks are less AND there's more tasks, it just fills with whatever task there is
-func (l *listModel) selectDailyTasksCompletedAndFill() []listItem {
+func (l *listModel) selectMonthlyTasksCompletedAndFill() []listItem {
 	if len(l.items) == 0 {
 		return []listItem{}
 	}
 
-	var atleast_daily = map[int]listItem{}
+	var atleast_monthly = map[int]listItem{}
 	for _, v := range l.items {
 		if v.item.Completed() {
 			continue
 		}
-		atleast_daily[v.item.ID()] = v
+		atleast_monthly[v.item.ID()] = v
 
-		if len(atleast_daily) == AT_LEAST_NUMBER_OF_DAILY_TASKS {
+		if len(atleast_monthly) == AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
 			break
 		}
 	}
 
-	if len(atleast_daily) < AT_LEAST_NUMBER_OF_DAILY_TASKS && len(l.items) >= len(atleast_daily) {
+	if len(atleast_monthly) < AT_LEAST_NUMBER_OF_MONTHLY_TASKS && len(l.items) >= len(atleast_monthly) {
 		for _, v := range l.items {
-			_, ok := atleast_daily[v.item.ID()]
+			_, ok := atleast_monthly[v.item.ID()]
 			if ok || !v.item.Completed() {
 				continue
 			}
-			atleast_daily[v.item.ID()] = v
+			atleast_monthly[v.item.ID()] = v
 
-			if len(atleast_daily) == AT_LEAST_NUMBER_OF_DAILY_TASKS {
+			if len(atleast_monthly) == AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
 				break
 			}
 
 		}
 	}
 
-	var arr_atleast_daily = []listItem{}
-	for _, v := range atleast_daily {
-		arr_atleast_daily = append(arr_atleast_daily, v)
+	var arr_atleast_monthly = []listItem{}
+	for _, v := range atleast_monthly {
+		arr_atleast_monthly = append(arr_atleast_monthly, v)
 	}
 
 	//i dont know if the slices.SortedFunc is what panics since it tries to access the second item?
-	if len(arr_atleast_daily) < 2 {
-		return arr_atleast_daily
+	if len(arr_atleast_monthly) < 2 {
+		return arr_atleast_monthly
 	}
 
-	return slices.SortedFunc(slices.Values(arr_atleast_daily), func(li1, li2 listItem) int {
+	return slices.SortedFunc(slices.Values(arr_atleast_monthly), func(li1, li2 listItem) int {
 		if li1.item.Completed() != li2.item.Completed() {
 			if !li1.item.Completed() {
 				return -1
@@ -198,11 +198,11 @@ var (
 	figlet_art = lipgloss.JoinVertical(
 		lipgloss.Center,
 		lipgloss.NewStyle().Foreground(lipgloss.Yellow).Render(FLASH_FIGLET),
-		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.BrightBlack).Render("No tasks assigned for today"),
+		lipgloss.NewStyle().MarginTop(1).Foreground(lipgloss.BrightBlack).Render("No tasks assigned for this month"),
 	)
 )
 
-func (_ *listModel) renderDailyGrid(items []listItem, c lipgloss.Style) string {
+func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string {
 	if len(items) == 0 {
 		return figlet_art
 	}
@@ -254,17 +254,17 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 // func (l *listModel) SelectLLTNextToExpire(){}
 
 const (
-	AT_LEAST_NUMBER_OF_DAILY_TASKS = 8
+	AT_LEAST_NUMBER_OF_MONTHLY_TASKS = 8
 	MAX_PER_ROW                    = 2
 )
 
 func (m *listModel) View() string {
-	dailyItems := m.selectDailyTasksCompletedAndFill()
-	if len(dailyItems) == 0 {
+	monthlyItems := m.selectMonthlyTasksCompletedAndFill()
+	if len(monthlyItems) == 0 {
 		return ""
 	}
 
 	cWidth := m.w / 2
 	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
-	return m.renderDailyGrid(dailyItems, cell)
+	return m.renderMonthlyGrid(monthlyItems, cell)
 }

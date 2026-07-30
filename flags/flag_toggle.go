@@ -7,7 +7,7 @@ import (
 	"strconv"
 )
 
-func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_Daily) {
+func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_Monthly) {
 	f := p.Args[0]
 	id, err := strconv.Atoi(f)
 	if err != nil {
@@ -31,7 +31,7 @@ func (p *ProgramOpts) FlagToggle(db *db.SqliteDB, dbTasks []*db.DBJoin_Daily) {
 			return
 		}
 	}
-	fmt.Println("Id not found. Does it exists in today's date?")
+	fmt.Println("Id not found. Does it exists in this month's tasks?")
 	os.Exit(1)
 
 }

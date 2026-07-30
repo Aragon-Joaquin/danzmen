@@ -36,28 +36,28 @@ func main() {
 		log.Fatalln("DB: ", err.Error())
 	}
 
-	dbTasks := []*db.DBJoin_Daily{}
-	dailyNames := cfg.GetTasksNonRepeatableNames()
+	monthlyDBTasks := []*db.DBJoin_Monthly{}
+	monthlyNames := cfg.GetMonthlyTasks()
 
-	if len(dailyNames) > 0 {
-		if dbTasks, err = sdb.CreateIfNotExistsTasks(dailyNames); err != nil {
+	if len(monthlyNames) > 0 {
+		if monthlyDBTasks, err = sdb.CreateIfNotExistsMonthlyTasks(monthlyNames); err != nil {
 			log.Fatalln("CreateIfNotExists: ", err.Error())
 		}
 	}
 
 	if f.Type == flags.PROGRAM_TOGGLE {
-		f.FlagToggle(sdb, dbTasks)
+		f.FlagToggle(sdb, monthlyDBTasks)
 		return
 	}
 
-	dailyToRender := []tui.DZTask{}
-	if len(dbTasks) > 0 {
-		for _, v := range tui.CreateMultipleDZTask(dbTasks...) {
-			dailyToRender = append(dailyToRender, v)
+	monthlyToRender := []tui.DZTask{}
+	if len(monthlyDBTasks) > 0 {
+		for _, v := range tui.CreateMultipleDZTask(monthlyDBTasks...) {
+			monthlyToRender = append(monthlyToRender, v)
 		}
 	}
 
-	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetNonRepetableLongTermTasks())
+	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetLongTermTasks())
 	if err != nil {
 		log.Fatalln("InsertOrSelectLongTermTasks: ", err)
 	}
@@ -74,12 +74,12 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		s := tui.RenderList(dailyToRender, longToRender, w, h)
+		s := tui.RenderList(monthlyToRender, longToRender, w, h)
 		os.Stdout.WriteString(s)
 		return
 	}
 
-	model := tui.CreateTUIModel(dailyToRender, longToRender, sdb)
+	model := tui.CreateTUIModel(monthlyToRender, longToRender, sdb)
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
 		log.Panicf("Error running program: %e \n", err)

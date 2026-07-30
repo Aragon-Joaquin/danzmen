@@ -15,12 +15,12 @@ type DZTask interface {
 	ReturnCheckboxString() string
 }
 
-func CreateMultipleDZTask(d ...*db.DBJoin_Daily) []DZTask {
+func CreateMultipleDZTask(d ...*db.DBJoin_Monthly) []DZTask {
 	var dzitem = []DZTask{}
 	for _, v := range d {
 		dzitem = append(dzitem, &task{
-			id:        v.DBDaily_Task.Id,
-			title:     v.DBDaily_Task.Name,
+			id:        v.DBMonthly_Task.Id,
+			title:     v.DBMonthly_Task.Name,
 			completed: ty.DBIntToBool(v.Completed),
 		})
 	}

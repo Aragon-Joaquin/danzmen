@@ -9,19 +9,19 @@ import (
 )
 
 // NOTE: tables
-type DBDaily_Task struct {
+type DBMonthly_Task struct {
 	Id   int
 	Name string
 }
-type DBDaily_Record struct {
+type DBMonthly_Record struct {
 	Date      string
-	DailyId   int
+	MonthlyId int
 	Completed int
 }
 
-type DBJoin_Daily struct {
-	*DBDaily_Task
-	*DBDaily_Record
+type DBJoin_Monthly struct {
+	*DBMonthly_Task
+	*DBMonthly_Record
 }
 
 type DBLong_Tasks struct {
@@ -33,7 +33,7 @@ type DBLong_Tasks struct {
 }
 
 // NOTE: repository
-func (s *SqliteDB) InsertTask(name string) (*DBDaily_Task, error) {
+func (s *SqliteDB) InsertTask(name string) (*DBMonthly_Task, error) {
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 
@@ -43,19 +43,19 @@ func (s *SqliteDB) InsertTask(name string) (*DBDaily_Task, error) {
 		return nil, err
 	}
 
-	q1 := `insert into daily_tasks(id, name) values (NULL, ?) returning id,name;`
+	q1 := `insert into monthly_tasks(id, name) values (NULL, ?) returning id,name;`
 	r := tx.QueryRowContext(ctx, q1, name)
 
 	if err := r.Err(); err != nil {
 		return nil, err
 	}
 
-	t := &DBDaily_Task{}
+	t := &DBMonthly_Task{}
 	if err := r.Scan(&t.Id, &t.Name); err != nil {
 		return nil, err
 	}
 
-	q2 := `insert into daily_record(daily_id) values (?);`
+	q2 := `insert into monthly_record(monthly_id) values (?);`
 	if _, err := tx.ExecContext(ctx, q2, t.Id); err != nil {
 		return nil, err
 	}
@@ -69,14 +69,14 @@ func (s *SqliteDB) InsertTask(name string) (*DBDaily_Task, error) {
 
 func (s *SqliteDB) UpdateCompletedTask(id int, completed int) error {
 	q := `
-	update daily_record set completed = ? where daily_id = ? AND date = date();
+	update monthly_record set completed = ? where monthly_id = ? AND date = date();
 	`
 
 	_, err := s.db.ExecContext(context.Background(), q, completed, id)
 	return err
 }
 
-func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, error) {
+func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJoin_Monthly, error) {
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -88,12 +88,13 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	//NOTE: INSERT
 	// create values or ignore errors
 	// select the the values
-	// insert them into daily_record
-	q1 := `insert or ignore into daily_tasks(id, name) values(NULL, ?);`
-	q1_5 := `select id from daily_tasks where name = (?)`
-	q2 := `insert or ignore into daily_record(daily_id, date) values(?, date());`
+	// insert them into monthly_record
+	q1 := `insert or ignore into monthly_tasks(id, name) values(NULL, ?);`
+	q1_5 := `select id from monthly_tasks where name = (?)`
+	q2 := `insert or ignore into monthly_record(monthly_id, date) values(?, date());`
 
-	for _, s := range names {
+	for _, n := range t {
+		s := n.Name
 		_, _ = tx.ExecContext(ctx, q1, s)
 
 		var t_id int
@@ -113,14 +114,14 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 	q3 := fmt.Sprintf(`
 	select 
 	t.id as t_id, t.name as t_name,
-	coalesce(d.date, "") as d_date, d.daily_id as d_dailyid, d.completed as d_completed
-	from daily_tasks t
-	left join daily_record d on d.daily_id = t.id and d.date = date()
-	where t.name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(names)-1))
+	coalesce(d.date, "") as d_date, d.monthly_id as d_monthlyid, d.completed as d_completed
+	from monthly_tasks t
+	left join monthly_record d on d.monthly_id = t.id and d.date = date()
+	where t.name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(t)-1))
 
 	var args []any
-	for _, n := range names {
-		args = append(args, n)
+	for _, n := range t {
+		args = append(args, n.Name)
 	}
 
 	r, err := s.db.QueryContext(ctx, q3, args...)
@@ -128,25 +129,25 @@ func (s *SqliteDB) CreateIfNotExistsTasks(names []string) ([]*DBJoin_Daily, erro
 		return nil, err
 	}
 
-	res := []*DBJoin_Daily{}
+	res := []*DBJoin_Monthly{}
 	for r.Next() {
 		//TODO: log this or return error?
 		if r.Err() != nil {
 			continue
 		}
 
-		t := &DBJoin_Daily{}
-		dt := &DBDaily_Task{}
-		dr := &DBDaily_Record{}
+		t := &DBJoin_Monthly{}
+		dt := &DBMonthly_Task{}
+		dr := &DBMonthly_Record{}
 
 		if err := r.Scan(
 			&dt.Id, &dt.Name,
-			&dr.Date, &dr.DailyId, &dr.Completed); err != nil {
+			&dr.Date, &dr.MonthlyId, &dr.Completed); err != nil {
 			return nil, err
 		}
 
-		t.DBDaily_Record = dr
-		t.DBDaily_Task = dt
+		t.DBMonthly_Record = dr
+		t.DBMonthly_Task = dt
 		res = append(res, t)
 	}
 

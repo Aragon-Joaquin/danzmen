@@ -39,7 +39,7 @@ func Init() (*SqliteDB, error) {
 
 func (s *SqliteDB) createDatabase() error {
 	_, err := s.db.Exec(`
-	CREATE TABLE IF NOT EXISTS daily_tasks(
+	CREATE TABLE IF NOT EXISTS monthly_tasks(
 		id integer PRIMARY KEY,
 		name text not null unique
 	);
@@ -47,20 +47,20 @@ func (s *SqliteDB) createDatabase() error {
 	CREATE TABLE IF NOT EXISTS long_tasks(
 		id integer PRIMARY KEY,
 		name text not null unique,
-   	expires_in text default(strftime('%m/%d/%Y', 'now', '+7 days')),
+    	expires_in text default(strftime('%m/%d/%Y', 'now', '+7 days')),
 		priority text not null check(priority IN ('low', 'med', 'high')) default('low'),
 		completed_at text null
 	);
 
-	CREATE TABLE IF NOT EXISTS daily_record(
+	CREATE TABLE IF NOT EXISTS monthly_record(
 		date text not null default(date()),
-		daily_id integer not null,
+		monthly_id integer not null,
 		completed integer not null check (completed IN (0, 1)) default (0),
-		PRIMARY KEY (date, daily_id),
-		FOREIGN KEY(daily_id) REFERENCES daily_tasks(id)
+		PRIMARY KEY (date, monthly_id),
+		FOREIGN KEY(monthly_id) REFERENCES monthly_tasks(id)
 	);
 
-	CREATE TABLE IF NOT EXISTS daily_progress(
+	CREATE TABLE IF NOT EXISTS monthly_progress(
 		id integer PRIMARY KEY,
 		date text not null default(date()) unique,
 		tasks_completed int not null default 0

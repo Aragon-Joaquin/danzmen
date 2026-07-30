@@ -4,35 +4,54 @@ import (
 	ty "danzmen/types"
 	"log"
 	"strings"
+
+	"github.com/BurntSushi/toml"
 )
 
-func (c *Cfg) GetTasksNonRepeatableNames() []string {
-	day := ty.GetTodaysDayName()
-	mapNames := map[string]struct{}{}
+func (c *Cfg) getNonRepeatableMonthlyTasks(m *toml.MetaData) []ty.MonthlyTasksCfg {
+	cMonth := ty.GetTodaysMonth()
+	mapNames := map[string]ty.MonthlyTasksCfg{}
 
-	for k, v := range c.Day {
-		if k != day {
+	for k, v := range c.Month {
+		if k != cMonth && k != ty.EVERY {
 			continue
 		}
 
 		for _, v := range v.Tasks {
-			key := strings.TrimSpace(strings.ToLower(v))
+			var t ty.MonthlyTasksCfg
+			var name string
+			if err := m.PrimitiveDecode(v, &name); err == nil {
+				t = ty.MonthlyTasksCfg{
+					Name:   name,
+					Times:  0,
+					Metric: "",
+				}
+			} else if err := m.PrimitiveDecode(v, &t); err != nil {
+				log.Fatalln("Unrecognizable monthly task value: ", v)
+			}
+
+			if t.Name == "" {
+				continue
+			}
+
+			key := strings.TrimSpace(strings.ToLower(t.Name))
 			if _, ok := mapNames[key]; ok {
 				continue
 			}
-			mapNames[key] = struct{}{}
+
+			mapNames[key] = t
 		}
 	}
 
-	var names = []string{}
-	for v := range mapNames {
+	var names = []ty.MonthlyTasksCfg{}
+	for _, v := range mapNames {
 		names = append(names, v)
 	}
 
 	return names
 }
 
-func (c *Cfg) GetNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
+func (c *Cfg) getNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
 	mapNames := map[string]ty.LongTermTasksCfg{}
 
 	for _, t := range c.LongTerm.Tasks {
@@ -64,4 +83,12 @@ func (c *Cfg) GetNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
 	}
 
 	return m
+}
+
+func (c *Cfg) GetMonthlyTasks() []ty.MonthlyTasksCfg {
+	return c.monthParsed
+}
+
+func (c *Cfg) GetLongTermTasks() []ty.LongTermTasksCfg {
+	return c.longTermParsed
 }

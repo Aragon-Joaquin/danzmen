@@ -19,7 +19,7 @@ var (
 			Border(lipgloss.RoundedBorder(), false, false, true, false).
 			AlignHorizontal(lipgloss.Center)
 
-	dailyTitle = baseTitleStyle.
+	monthlyTitle = baseTitleStyle.
 			BorderForeground(lipgloss.Yellow).
 			Foreground(lipgloss.Yellow).MarginLeft(2)
 
@@ -52,7 +52,7 @@ var (
 			Foreground(lipgloss.BrightRed).
 			MarginRight(2)
 
-	dailyTitleHalf = dailyTitle.
+	monthlyTitleHalf = monthlyTitle.
 			Border(lipgloss.Border{}, false).
 			AlignHorizontal(lipgloss.Left).
 			MarginLeft(2)
@@ -64,7 +64,7 @@ var (
 	ltt_empty_task_placeholder = "Nothing to worry about"
 )
 
-func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
+func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 	if w < MINIMUM_WIDTH_REQUIRED {
 		return "not enough space"
 	}
@@ -74,33 +74,33 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 		ll = lm
 	}
 
-	var dl *listModel = &listModel{}
-	if lm, ok := dailyI.(*listModel); ok {
-		dl = lm
+	var ml *listModel = &listModel{}
+	if lm, ok := monthlyI.(*listModel); ok {
+		ml = lm
 	}
 
-	dailyItems := dl.selectDailyTasksCompletedAndFill()
-	total, completed := dl.countTotalAndCompletedTasks()
+	monthlyItems := ml.selectMonthlyTasksCompletedAndFill()
+	total, completed := ml.countTotalAndCompletedTasks()
 
-	dailyText := fmt.Sprintf("Daily tasks (%d/%d completed)", completed, total)
+	monthlyText := fmt.Sprintf("Monthly tasks (%d/%d completed)", completed, total)
 
 	var cWidth int
 	var titlePadding int
 
-	//screen is bigger than 50% screen, else its smoll (<50% of screen width)
+	//screen is bigger than 50% screen, else its small (<50% of screen width)
 	cWidth = (w / 2) - 2 // 2 for padding
 
 	if w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
 		cWidth = cWidth / 2
 		titlePadding = (w - 8) / 2
-		dl.SetWidth(w / 2)
+		ml.SetWidth(w / 2)
 	} else {
 		titlePadding = w - 4
-		dl.SetWidth(w)
+		ml.SetWidth(w)
 	}
 
 	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
-	cellsRendered := dl.renderDailyGrid(dailyItems, cell)
+	cellsRendered := ml.renderMonthlyGrid(monthlyItems, cell)
 
 	var hasItemsPosition lipgloss.Position = lipgloss.Left
 	if len(cellsRendered) > 0 {
@@ -121,7 +121,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 			lipgloss.Center,
 			lipgloss.JoinHorizontal(
 				hasItemsPosition,
-				dailyTitleHalf.Width(widthForTitle).Render(dailyText),
+				monthlyTitleHalf.Width(widthForTitle).Render(monthlyText),
 				lttNotify.Width(widthForTitle).Render(nearest_task_placeholder),
 			),
 			borderBottom.Width(w-1).Render(),
@@ -130,15 +130,15 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 	}
 
 	var r_tasks string
-	if len(dailyItems) > AT_LEAST_NUMBER_OF_DAILY_TASKS {
+	if len(monthlyItems) > AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
 		r_tasks = remainingTasks.Width((w - 2) / 2).Render(
-			fmt.Sprintf("Show %d more tasks", len(dailyItems)-AT_LEAST_NUMBER_OF_DAILY_TASKS))
+			fmt.Sprintf("Show %d more tasks", len(monthlyItems)-AT_LEAST_NUMBER_OF_MONTHLY_TASKS))
 	}
 
 	//NOTE: render complex ui (double tasks)
-	dailySection := lipgloss.JoinVertical(
+	monthlySection := lipgloss.JoinVertical(
 		hasItemsPosition,
-		dailyTitle.Width(titlePadding).Render(dailyText),
+		monthlyTitle.Width(titlePadding).Render(monthlyText),
 		cellsRendered,
 		r_tasks,
 	)
@@ -178,7 +178,7 @@ func RenderModelView(dailyI DZList, longI DZList, w, h int) string {
 
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		dailySection,
+		monthlySection,
 		separatorLine.Render(verticalBar),
 		longTermSection,
 	)

@@ -11,21 +11,22 @@ import (
 )
 
 type Cfg struct {
-	//general cfg
-	Start string `toml:"start"`
-
 	//specific cfg
-	Day  map[ty.DAYS_PER_WEEK]ty.GenericScheduleCfg `toml:"day"`
-	Loop map[string]ty.GenericScheduleCfg           `toml:"loop"`
+	Month map[ty.ALL_MONTHS]struct {
+		Tasks []toml.Primitive `toml:"tasks"`
+	} `toml:"month"`
 
 	LongTerm struct {
 		Tasks []ty.LongTermTasksCfg
 	} `toml:"longterm"`
+	monthParsed    []ty.MonthlyTasksCfg
+	longTermParsed []ty.LongTermTasksCfg
 }
 
 func generateDefaultCFGFile() *Cfg {
 	return &Cfg{
-		Start: "sunday",
+		monthParsed:    []ty.MonthlyTasksCfg{},
+		longTermParsed: []ty.LongTermTasksCfg{},
 	}
 }
 
@@ -54,9 +55,22 @@ func ParseTOML() (*Cfg, error) {
 		return nil, err
 	}
 
-	if _, err := toml.DecodeFile(path, c); err != nil {
+	meta, err := toml.DecodeFile(path, c)
+	if err != nil {
 		return nil, err
 	}
+
+	c.monthParsed = c.getNonRepeatableMonthlyTasks(&meta)
+	c.longTermParsed = c.getNonRepetableLongTermTasks()
+
+	for i, v := range meta.Undecoded() {
+		if i == 0 {
+			ty.TermSetColor(ty.Red)
+		}
+
+		fmt.Printf("- UNKNOWN FIELD: %s\n", v.String())
+	}
+	ty.TermResetColor()
 
 	return c, nil
 }

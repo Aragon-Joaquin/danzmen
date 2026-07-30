@@ -12,7 +12,7 @@ type TuiModel struct {
 	db         *db.SqliteDB
 	w          int
 	h          int
-	daily_list DZList
+	monthly_list DZList
 	long_list  DZList
 }
 
@@ -21,18 +21,18 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func RenderList(daily []DZTask, long []DZLongTask, w, h int) string {
-	daily_list := CreateDZList(daily, NewSimpleStyle(), w, h)
+func RenderList(monthly []DZTask, long []DZLongTask, w, h int) string {
+	monthly_list := CreateDZList(monthly, NewSimpleStyle(), w, h)
 	long_list := CreateDZLongList(long, NewSimpleStyle(), w, h)
-	return RenderModelView(daily_list, long_list, w, h)
+	return RenderModelView(monthly_list, long_list, w, h)
 }
 
-func CreateTUIModel(daily []DZTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
+func CreateTUIModel(monthly []DZTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
 	mTui := TuiModel{
 		db:         db,
 		w:          DEFAULT_WIDTH,
 		h:          LIST_HEIGHT,
-		daily_list: CreateDZList(daily, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		monthly_list: CreateDZList(monthly, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 		long_list:  CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 	}
 
@@ -48,7 +48,7 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.h = msg.Height
 		m.w = msg.Width
-		m.daily_list.SetSizes(msg.Width, msg.Height)
+		m.monthly_list.SetSizes(msg.Width, msg.Height)
 		m.long_list.SetSizes(msg.Width, msg.Height)
 
 	case tea.KeyPressMsg:
@@ -56,7 +56,7 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+c":
 			return m, tea.Quit
 		case "enter", "space":
-			i, ok := m.daily_list.SelectedItem()
+			i, ok := m.monthly_list.SelectedItem()
 
 			if !ok {
 				break
@@ -88,7 +88,7 @@ var (
 func (m TuiModel) View() tea.View {
 	c := container.Width(m.w).MarginTop(1).Padding(0)
 
-	v := tea.NewView(c.Render(RenderModelView(m.daily_list, m.long_list, m.w, m.h)))
+	v := tea.NewView(c.Render(RenderModelView(m.monthly_list, m.long_list, m.w, m.h)))
 	v.AltScreen = true
 	return v
 }
