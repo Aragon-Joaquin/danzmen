@@ -4,8 +4,7 @@
 #### todo: 
 - [x] sqlite
 - [x] make different list delegates (simple and check)
-- [ ] make a streak popup. add a sql table called "monthly_progress" to store it.
-- [x] on selectOrCreate query dont increment id if it failed silently
+- [ ] make a streak popup. add a sql table called "monthly_progress" to store it. [x] on selectOrCreate query dont increment id if it failed silently
 - [x] make the flags on main more easily manageable
 - [ ] make height be same as the list height IF list.height() < MAX_HEIGHT
 - [x] stop using bubbles/list and make my own components
@@ -45,7 +44,7 @@ the idea is:
 
 [longterm]
 tasks = [
-  {ends = "30/12/2027", name = "Get marry idk", priority = "low"} # date format is DD/MM/YYYY
+  {ends = "30/12/2027", name = "Get marry idk", priority = "low"}, # date format is DD/MM/YYYY
   {ends = "500d", name = "Get one follower in github lol", priority = "high"} # you can also do this but it gets registered once you run the program. its also kinda buggy
 ]
 
@@ -58,8 +57,8 @@ tasks = [
 # every month it gets refreshed
 [month.every]
 tasks = [ 
-        "talk to a wom*n" # you can combine both!!! same as {name = ""}
-        {name = "farm *any gacha currency*", times = 1337.55} 
+        "talk to a wom*n", # you can combine both!!! same as {name = ""}
+        {name = "farm *any gacha currency*", times = 1337.55},
         {name = "consume 120 petabytes of reels", times = 120, metric = "PB"} # and specify the metric of what we're talking about! (it just to be reminded of, provides NO functionality)
     ]
 
