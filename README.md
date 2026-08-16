@@ -18,7 +18,7 @@
 - [x] show tasks as horizontal
 - [x] parse the tasks from the toml to lowercase (make them case insensitive) (+ trimmed space)
 - [ ] create the config.toml file with a bash script and ln -s to $HOME/desktop inside the Makefile @install flag
-- [ ] improve toml error to be more explicit
+- [x] improve toml error to be more explicit
 - [x] restart tasks state per month
 - [x] show non completed tasks first
 - [ ] optimze db (create indexes)

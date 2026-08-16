@@ -66,12 +66,17 @@ func (s *SqliteDB) insertOrSelectYear_MonthID(date time.Time) (int, error) {
 	return id, nil
 }
 
-func (s *SqliteDB) UpdateCompletedTask(id int, completed int) error {
+func (s *SqliteDB) UpdateCompletedTask(taskid int, completed int) error {
+	id, err := s.insertOrSelectYear_MonthID(time.Now())
+	if err != nil {
+		return err
+	}
+
 	q := `
-	update monthly_record set completed = ? where monthly_id = ? AND date = date();
+	update monthly_record set completed = ? where monthly_id = ? AND year_month = ?;
 	`
 
-	_, err := s.db.ExecContext(context.Background(), q, completed, id)
+	_, err = s.db.ExecContext(context.Background(), q, completed, taskid, id)
 	return err
 }
 

@@ -33,9 +33,9 @@ var (
 			Padding(0, 2)
 
 	cStyle = lipgloss.NewStyle().
-		Margin(0, 1).
 		Height(2).
-		MaxHeight(2)
+		MaxHeight(2).
+		Align(lipgloss.Left)
 
 	remainingTasks = lipgloss.NewStyle().
 			Foreground(lipgloss.BrightBlack).
@@ -43,8 +43,8 @@ var (
 
 	lttTitle    = lipgloss.NewStyle()
 	lttidxbox   = idx_box.Foreground(lipgloss.BrightRed)
-	lttPriority = lipgloss.NewStyle().Padding(0, 1).Margin(0, 1)
-	lttEnds     = lipgloss.NewStyle()
+	lttPriority = lipgloss.NewStyle().Padding(0, 1).Bold(true)
+	lttEnds     = lipgloss.NewStyle().Padding(0, 1)
 
 	//simple UI - half the screen
 	lttNotify = lipgloss.NewStyle().
@@ -100,7 +100,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 	}
 
 	cellsRendered := ml.renderMonthlyGrid(monthlyItems,
-		cStyle.Width(cWidth).MaxWidth(cWidth))
+		cStyle.Margin(0, 1).Width(cWidth).MaxWidth(cWidth))
 
 	var hasItemsPosition lipgloss.Position = lipgloss.Left
 	if len(cellsRendered) > 0 {
@@ -153,9 +153,9 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		}
 		icon := lt.ReturnCheckboxString()
 
-		row := cStyle.Height(1).Width((cWidth*2)-1).Render(
+		row := cStyle.MaxHeight(1).Height(1).Width(((cWidth) * 2)).Render(
 			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
-			lttTitle.Width(int(float64(cWidth)*1.4)).Render(lt.TitleEllipsis(22)),
+			lttTitle.Width(int(float64(cWidth)*1.3)).Render(lt.TitleEllipsis(22)),
 			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
 			lttEnds.Render(lt.HumanReadableEndsIn()),
 		)
@@ -170,17 +170,25 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 
 	longTermSection := lipgloss.JoinVertical(
 		lipgloss.Center,
-		longTermTitle.Width(titlePadding).Render(
+		longTermTitle.Width(titlePadding-1).Render(
 			fmt.Sprintf("Long term (%dd left!)", dd),
 		),
 		lipgloss.NewStyle().Render(longContent),
 	)
 
+	// this is more understandable than the debugger output
+	// return lipgloss.JoinHorizontal(
+	// 	lipgloss.Left,
+	// 	lipgloss.NewStyle().Background(lipgloss.Blue).Render(monthlySection),
+	// 	separatorLine.Background(lipgloss.Green).Render(verticalBar),
+	// 	lipgloss.NewStyle().Background(lipgloss.Red).Render(longTermSection),
+	// )
+
 	return lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		monthlySection,
+		lipgloss.NewStyle().Render(monthlySection),
 		separatorLine.Render(verticalBar),
-		longTermSection,
+		lipgloss.NewStyle().Render(longTermSection),
 	)
 }
 

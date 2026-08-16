@@ -57,7 +57,12 @@ func ParseTOML() (*Cfg, error) {
 
 	meta, err := toml.DecodeFile(path, c)
 	if err != nil {
-		return nil, err
+		terr, ok := err.(toml.ParseError)
+		if !ok {
+			return nil, err
+		}
+
+		return nil, errors.New(terr.ErrorWithUsage())
 	}
 
 	c.monthParsed = c.getNonRepeatableMonthlyTasks(&meta)

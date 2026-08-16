@@ -5,7 +5,7 @@ import (
 	"danzmen/db"
 	"danzmen/flags"
 	"danzmen/tui"
-	"log"
+	"fmt"
 	"os"
 
 	tea "charm.land/bubbletea/v2"
@@ -16,7 +16,8 @@ func main() {
 	//NOTE: flag parsing
 	f, err := flags.ParseOptions()
 	if err != nil {
-		log.Fatalln("FLAG: ", err.Error())
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	if f.Type == flags.PROGRAM_HELP {
@@ -26,14 +27,15 @@ func main() {
 	//NOTE: toml
 	cfg, err := config.ParseTOML()
 	if err != nil {
-		log.Fatalln("TOML: ", err.Error())
-		return
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	//NOTE: call the db to obtain the values
 	sdb, err := db.Init()
 	if err != nil {
-		log.Fatalln("DB: ", err.Error())
+		fmt.Printf("Error while saving to the Database: %s", err.Error())
+		os.Exit(1)
 	}
 
 	monthlyDBTasks := []*db.DBJoin_Monthly{}
@@ -41,7 +43,8 @@ func main() {
 
 	if len(monthlyNames) > 0 {
 		if monthlyDBTasks, err = sdb.CreateIfNotExistsMonthlyTasks(monthlyNames); err != nil {
-			log.Fatalln("CreateIfNotExists: ", err.Error())
+			fmt.Println(err.Error())
+			os.Exit(1)
 		}
 	}
 
@@ -59,7 +62,8 @@ func main() {
 
 	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetLongTermTasks())
 	if err != nil {
-		log.Fatalln("InsertOrSelectLongTermTasks: ", err)
+		fmt.Println(err.Error())
+		os.Exit(1)
 	}
 
 	longToRender := []tui.DZLongTask{}
@@ -71,7 +75,8 @@ func main() {
 	if f.Type == flags.PROGRAM_LIST {
 		w, h, err := xterm.GetSize(os.Stdout.Fd())
 		if err != nil {
-			log.Fatalln(err)
+			fmt.Printf("UI Error: %s", err.Error())
+			os.Exit(1)
 		}
 
 		s := tui.RenderList(monthlyToRender, longToRender, w, h)
@@ -83,6 +88,7 @@ func main() {
 	model := tui.CreateTUIModel(monthlyToRender, longToRender, sdb)
 	p := tea.NewProgram(model)
 	if _, err := p.Run(); err != nil {
-		log.Panicf("Error running program: %e \n", err)
+		fmt.Printf("Error running program: %s", err.Error())
+		os.Exit(1)
 	}
 }
