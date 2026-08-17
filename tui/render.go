@@ -33,8 +33,8 @@ var (
 			Padding(0, 2)
 
 	cStyle = lipgloss.NewStyle().
-		Height(2).
-		MaxHeight(2).
+		Height(3).
+		MaxHeight(3).
 		Align(lipgloss.Left)
 
 	remainingTasks = lipgloss.NewStyle().

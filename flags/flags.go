@@ -7,9 +7,13 @@ import (
 	"os"
 )
 
+var (
+	flag_toggle_long_msg = "Set to true if a Long task is getting toggle on/off, else it assumes a monthly task is going to be modified"
+)
+
 func ParseOptions() (*ProgramOpts, error) {
 	if len(os.Args) < 2 {
-		return printHelp(), errors.New("Insufficient args provided")
+		return printHelp(), nil
 	}
 
 	switch os.Args[1] {
@@ -36,6 +40,8 @@ func ParseOptions() (*ProgramOpts, error) {
 			return printHelp(), errors.New("Expected an id")
 		}
 
+		tg.Bool("long", false, flag_toggle_long_msg)
+
 		return &ProgramOpts{Type: PROGRAM_TOGGLE, Args: args[:1]}, nil
 
 	default:
@@ -44,12 +50,16 @@ func ParseOptions() (*ProgramOpts, error) {
 }
 
 func printHelp() *ProgramOpts {
-	fmt.Println(`Usage for `, os.Args[0], `: 
-	- [program] help		This screen
-	- [program] list		Output a simple screen of the tasks today
-	- [program] check		(UNFINISHED) Enter in a tui to check on/off tasks
-	- [program] toggle {id}		Check/uncheck a today's task
-	`)
+	fmt.Println("Usage for ", os.Args[0], ":",
+		`
+ COMMANDS:
+    help		This screen
+    list		Output a simple screen of the tasks today
+    check		(UNFINISHED) Enter in a tui to check on/off tasks
+    toggle {id}		Check/uncheck a today's task
+      -monthly={id}	(default)
+      -long={id} 
+			`)
 	return &ProgramOpts{Type: PROGRAM_HELP}
 
 }

@@ -4,3 +4,4 @@ tmp/
 danzmen
 danzmen.db
 __debug_bin*
+build/

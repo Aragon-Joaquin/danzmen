@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 
-	tea "charm.land/bubbletea/v2"
 	xterm "github.com/charmbracelet/x/term"
 )
 
@@ -85,10 +84,14 @@ func main() {
 		return
 	}
 
-	model := tui.CreateTUIModel(monthlyToRender, longToRender, sdb)
-	p := tea.NewProgram(model)
-	if _, err := p.Run(); err != nil {
-		fmt.Printf("Error running program: %s", err.Error())
-		os.Exit(1)
-	}
+	//else, it checked the "CHECK" flag
+	// TODO: make this work lol
+	fmt.Println("	>> Check mode isn't complete yet")
+
+	// model := tui.CreateTUIModel(monthlyToRender, longToRender, sdb)
+	// p := tea.NewProgram(model)
+	// if _, err := p.Run(); err != nil {
+	// 	fmt.Printf("Error running program: %s", err.Error())
+	// 	os.Exit(1)
+	// }
 }

@@ -210,6 +210,7 @@ var (
 	monthly_times_done = lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)
 )
 
+// render the monthly tasks
 func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string {
 	if len(items) == 0 {
 		return figlet_art
@@ -231,7 +232,7 @@ func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 				fmt.Sprintf("%s %d)",
 					i.item.ReturnCheckboxString(), i.item.ID()),
 			),
-			title_cmp.Render(i.item.TitleEllipsis(max_char_until_ellipsis)),
+			title_cmp.Strikethrough(i.item.Completed()).Render(i.item.TitleEllipsis(max_char_until_ellipsis)),
 		)
 
 		if mTask, ok := i.item.(DZMonthlyTask); ok && mTask.TimesTotal() > 0 {
@@ -240,8 +241,8 @@ func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 					lipgloss.JoinVertical(
 						lipgloss.Center,
 						main_body,
-						monthly_times_done.Render(fmt.Sprintf(
-							"└─> %2.f / %1.f%s", mTask.CurrentProgress(), mTask.TimesTotal(), mTask.Metric()),
+						monthly_times_done.MarginLeft(4).Width(max_char_until_ellipsis+4).Strikethrough(i.item.Completed()).Render(fmt.Sprintf(
+							"└─>%2.f / %1.f%s", mTask.CurrentProgress(), mTask.TimesTotal(), mTask.Metric()),
 						),
 					),
 				),

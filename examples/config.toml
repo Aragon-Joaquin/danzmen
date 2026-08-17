@@ -1,0 +1,23 @@
+# config.example.toml
+# do whatever you want with this file lol
+
+[longterm]
+tasks = [
+  {ends = "30/12/2030", name = "Get marry idk", priority = "low"},
+  {name = "install archlinux lol", priority = "med" },
+  {ends = "500d", name = "Get one follower in github lol", priority = "high"}
+]
+
+[month.october]
+tasks = [
+  "why is it october i HATE this month"
+]
+
+[month.every]
+tasks = [ 
+        "talk to a wom*n",
+        {name = "DONT bath"},
+        {name = "watch 300 hours of vtubers", times = 300 }
+        {name = "farm *any gacha currency*", times = 1337.55},
+]
+
