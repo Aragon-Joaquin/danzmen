@@ -37,9 +37,11 @@ tasks = [
 **Requirements:**
 - GO `1.26.5 linux/amd64` (only tested in this version, expect to work in multiples)
 - SQLite3
+- Have the $HOME env variable set lol (like every distro)
 
 ```sh
 sudo make install
+echo 'eval "$(danzmen list)"' >> ${HOME}/.bashrc #it executes each time a shell opens!
 
 # you can skip these:
 make config # setups + makes the default config file (skips if already one exists)
