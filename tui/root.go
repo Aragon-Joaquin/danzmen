@@ -62,12 +62,7 @@ func (m TuiModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				break
 			}
 
-			var toggle int = 0
-			if !i.Completed() {
-				toggle = 1
-			}
-
-			if err := m.db.UpdateCompletedTask(i.ID(), toggle); err != nil {
+			if err := m.db.UpdateCompletedMonthlyTask(i.ID(), !i.Completed()); err != nil {
 				log.Println(err)
 				return m, nil
 			}

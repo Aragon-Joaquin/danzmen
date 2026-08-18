@@ -66,7 +66,7 @@ func (s *SqliteDB) createDatabase() error {
 		year_month integer not null,
 		monthly_id integer not null,
 
-		completed integer not null check (completed IN (0, 1)) default (0),
+		completed_at text null,
 
 		PRIMARY KEY (year_month, monthly_id),
 		FOREIGN KEY(monthly_id) REFERENCES monthly_tasks(id)

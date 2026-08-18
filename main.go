@@ -6,6 +6,7 @@ import (
 	"danzmen/flags"
 	"danzmen/tui"
 	"fmt"
+	"log"
 	"os"
 
 	xterm "github.com/charmbracelet/x/term"
@@ -14,12 +15,14 @@ import (
 func main() {
 	//NOTE: flag parsing
 	f, err := flags.ParseOptions()
+
 	if err != nil {
 		fmt.Println(err.Error())
 		os.Exit(1)
 	}
 
-	if f.Type == flags.PROGRAM_HELP {
+	if f.GetType() == flags.PROGRAM_HELP {
+		fmt.Println(f.UsageString())
 		return
 	}
 
@@ -37,6 +40,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// fill up the values with db
 	monthlyDBTasks := []*db.DBJoin_Monthly{}
 	monthlyNames := cfg.GetMonthlyTasks()
 
@@ -47,22 +51,32 @@ func main() {
 		}
 	}
 
-	if f.Type == flags.PROGRAM_TOGGLE {
-		f.FlagToggle(sdb, monthlyDBTasks)
+	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetLongTermTasks())
+	if err != nil {
+		fmt.Println(err.Error())
+		os.Exit(1)
+	}
+
+	if f.GetType() == flags.PROGRAM_TOGGLE {
+		tf, ok := f.(*flags.ToggleFlag)
+		if !ok {
+			log.Fatalf("Type was Toggle flag but it cannot type cast to it")
+			return
+		}
+
+		if err := tf.FlagToggle(sdb, monthlyDBTasks, ltt); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		return
 	}
 
+	//create render-able objects
 	monthlyToRender := []tui.DZMonthlyTask{}
 	if len(monthlyDBTasks) > 0 {
 		for _, v := range tui.CreateMultipleDZMonthlyTask(monthlyDBTasks...) {
 			monthlyToRender = append(monthlyToRender, v)
 		}
-	}
-
-	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetLongTermTasks())
-	if err != nil {
-		fmt.Println(err.Error())
-		os.Exit(1)
 	}
 
 	longToRender := []tui.DZLongTask{}
@@ -71,7 +85,7 @@ func main() {
 	}
 
 	//NOTE: start painting UI
-	if f.Type == flags.PROGRAM_LIST {
+	if _, ok := f.(*flags.ListFlag); ok {
 		w, h, err := xterm.GetSize(os.Stdout.Fd())
 		if err != nil {
 			fmt.Printf("UI Error: %s", err.Error())

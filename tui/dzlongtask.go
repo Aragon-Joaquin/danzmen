@@ -38,14 +38,14 @@ func CreateMultipleDZLongTask(d ...*db.DBLong_Tasks) []DZLongTask {
 		i := &task{
 			id:        v.Id,
 			title:     v.Name,
-			completed: v.Completed_at.Valid,
+			completed: v.Completed_At.Valid,
 		}
 
 		dzlong = append(dzlong, &longTask{
 			task:         i,
 			expires_in:   v.Expires_in.String,
 			priority:     v.Priority,
-			completed_at: v.Completed_at.String,
+			completed_at: v.Completed_At.String,
 		})
 
 	}
@@ -57,7 +57,7 @@ func (l *longTask) ExpiresIn() string           { return l.expires_in }
 func (l *longTask) Priority() ty.PRIORITY_TYPES { return l.priority }
 func (l *longTask) CompletedAt() string         { return l.completed_at }
 func (l *longTask) MM_DD_YYYY_Format() (time.Time, error) {
-	return time.Parse(ty.MM_DD_YYYY, l.expires_in)
+	return time.Parse(string(ty.MM_DD_YYYY), l.expires_in)
 }
 
 func (l *longTask) RenderPriority() string {

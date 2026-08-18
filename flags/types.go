@@ -1,5 +1,12 @@
 package flags
 
+const (
+	program_help_arg   = "help"
+	program_list_arg   = "list"
+	program_check_arg  = "check"
+	program_toggle_arg = "toggle"
+)
+
 type PROGRAM_OPTION int
 
 const (
@@ -9,14 +16,24 @@ const (
 	PROGRAM_TOGGLE
 )
 
-const (
-	program_help_arg   = "help"
-	program_list_arg   = "list"
-	program_check_arg  = "check"
-	program_toggle_arg = "toggle"
-)
+type FlagType interface {
+	GetType() PROGRAM_OPTION
+	GetArgs() []string
 
-type ProgramOpts struct {
-	Type PROGRAM_OPTION
-	Args []string
+	UsageString() string
 }
+
+type p_opts struct {
+	_type PROGRAM_OPTION
+	_args []string
+}
+
+func newProgramOpts(t PROGRAM_OPTION) *p_opts {
+	return &p_opts{
+		_type: t,
+		_args: []string{},
+	}
+}
+
+func (p *p_opts) GetType() PROGRAM_OPTION { return p._type }
+func (p *p_opts) GetArgs() []string       { return p._args }

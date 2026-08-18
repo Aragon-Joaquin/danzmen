@@ -2,7 +2,6 @@ package tui
 
 import (
 	"danzmen/db"
-	ty "danzmen/types"
 )
 
 type DZMonthlyTask interface {
@@ -26,7 +25,7 @@ func CreateMultipleDZMonthlyTask(d ...*db.DBJoin_Monthly) []DZMonthlyTask {
 		i := &task{
 			id:        v.DBMonthly_Task.Id,
 			title:     v.DBMonthly_Task.Name,
-			completed: ty.DBIntToBool(v.Completed)}
+			completed: v.Completed_At.Valid}
 
 		dzitem = append(dzitem, &monthlyTask{
 			task:             i,

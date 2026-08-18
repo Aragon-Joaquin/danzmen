@@ -30,7 +30,7 @@ var (
 
 	separatorLine = lipgloss.NewStyle().
 			Foreground(lipgloss.BrightBlack).
-			Padding(0, 2)
+			Padding(0, 1)
 
 	cStyle = lipgloss.NewStyle().
 		Height(3).
@@ -91,9 +91,10 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 	cWidth = (w / 2) - 2 // 2 for padding
 
 	if w > MINIMUM_DOUBLE_TASK_WIDTH_REQUIRED {
-		cWidth = cWidth / 2
-		titlePadding = (w - 8) / 2
-		ml.SetWidth(w / 2)
+		half := (w - 3) / 2 // vertical bar is 3 wide (1 char + padding)
+		cWidth = (half - 4) / 2
+		titlePadding = half - 2
+		ml.SetWidth(half)
 	} else {
 		titlePadding = w - 4
 		ml.SetWidth(w)

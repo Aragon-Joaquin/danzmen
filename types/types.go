@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-func DBIntToBool(i int) bool {
-	if i == 1 {
-		return true
-	}
-	return false
-}
-
 type ALL_MONTHS string
 
 const (
@@ -32,14 +25,15 @@ const (
 	EVERY ALL_MONTHS = "every"
 )
 
+type DATE_FORMATS string
+
 const (
-	MM_DD_YYYY = "01/02/2006" // <- only support this for now
+	MM_DD_YYYY DATE_FORMATS = "01/02/2006" // <- only support this for now
 	//DD_MM_YYYY = "02/01/2006"
 )
 
-func GetTodaysMonth() ALL_MONTHS {
-	return ValidateMonth(time.Now().Month().String())
-}
+func GetDate(format DATE_FORMATS) string { return time.Now().Format(string(format)) }
+func GetTodaysMonth() ALL_MONTHS         { return ValidateMonth(time.Now().Month().String()) }
 
 // i can assert the type... but i prefer to make sure...
 func ValidateMonth(d string) ALL_MONTHS {
