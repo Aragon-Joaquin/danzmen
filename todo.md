@@ -8,6 +8,7 @@
     - [ ] flags
 - [ ] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically @priority(high)
 - [ ] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
+- [ ] implement `danzmen reset` to reset the db. @priority(medium) 
 - [ ] customize the float precision of the monthly_times_done @priority(medium)
 - [ ] make possible to add custom priority/metatags + colors @priority(medium)
 - [ ] make a notification of which tasks were pending last month @priority(medium)

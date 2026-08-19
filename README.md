@@ -13,7 +13,7 @@ the idea is:
 
 [longterm]
 tasks = [
-  {ends = "30/12/2027", name = "Get marry idk", priority = "low"}, # date format is DD/MM/YYYY
+  {ends = "12/30/2027", name = "Get marry idk", priority = "low"}, # date format is MM/DD/YYYY
   {ends = "500d", name = "Get one follower in github lol", priority = "high"} # you can also do this but it gets registered once you run the program. its also kinda buggy
 ]
 

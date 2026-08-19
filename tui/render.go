@@ -43,8 +43,13 @@ var (
 
 	lttTitle    = lipgloss.NewStyle()
 	lttidxbox   = idx_box.Foreground(lipgloss.BrightRed)
-	lttPriority = lipgloss.NewStyle().Padding(0, 1).Bold(true)
-	lttEnds     = lipgloss.NewStyle().Padding(0, 1)
+	lttPriority = lipgloss.NewStyle().
+			Padding(0, 1).
+			Bold(true).
+			MaxWidth(6).
+			Width(6).
+			Align(lipgloss.Center)
+	lttEnds = lipgloss.NewStyle().Padding(0, 1)
 
 	//simple UI - half the screen
 	lttNotify = lipgloss.NewStyle().
@@ -66,7 +71,7 @@ var (
 
 func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 	if w < MINIMUM_WIDTH_REQUIRED {
-		return "not enough space"
+		return ""
 	}
 
 	var ll *listModel = &listModel{}
@@ -79,7 +84,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		ml = lm
 	}
 
-	monthlyItems := ml.selectMonthlyTasksCompletedAndFill()
+	monthlyItems := ml.selectTasksCompletedAndFill(AT_LEAST_NUMBER_OF_MONTHLY_TASKS)
 	total, completed := ml.countTotalAndCompletedTasks()
 
 	monthlyText := fmt.Sprintf("Monthly tasks (%d/%d completed)", completed, total)
@@ -121,8 +126,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		return lipgloss.JoinVertical(
 			lipgloss.Center,
 			lipgloss.JoinHorizontal(
-				hasItemsPosition,
-				monthlyTitleHalf.Width(widthForTitle).Render(monthlyText),
+				hasItemsPosition, monthlyTitleHalf.Width(widthForTitle).Render(monthlyText),
 				lttNotify.Width(widthForTitle).Render(nearest_task_placeholder),
 			),
 			borderBottom.Width(w-1).Render(),
@@ -130,10 +134,11 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		)
 	}
 
+	//shows if there's more monthly tasks remain to be rendered
 	var r_tasks string
-	if len(monthlyItems) > AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
+	if len(monthlyItems) > int(AT_LEAST_NUMBER_OF_MONTHLY_TASKS) {
 		r_tasks = remainingTasks.Width((w - 2) / 2).Render(
-			fmt.Sprintf("Show %d more tasks", len(monthlyItems)-AT_LEAST_NUMBER_OF_MONTHLY_TASKS))
+			fmt.Sprintf("Show %d more tasks", len(monthlyItems)-int(AT_LEAST_NUMBER_OF_MONTHLY_TASKS)))
 	}
 
 	//NOTE: render complex ui (double tasks)
@@ -146,28 +151,10 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 
 	verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 14), "\n")
 
-	var longRows []string
-	for _, li := range ll.items {
-		lt, ok := li.item.(DZLongTask)
-		if !ok {
-			continue
-		}
-		icon := lt.ReturnCheckboxString()
-
-		row := cStyle.MaxHeight(1).Height(1).Width(((cWidth) * 2)).Render(
-			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
-			lttTitle.Width(int(float64(cWidth)*1.3)).Render(lt.TitleEllipsis(22)),
-			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
-			lttEnds.Render(lt.HumanReadableEndsIn()),
-		)
-
-		longRows = append(longRows, row)
-	}
-
-	longContent := strings.Join(longRows, "\n")
-	if longContent == "" {
-		longContent = lipgloss.NewStyle().Render(ltt_empty_task_placeholder)
-	}
+	longItems := ll.selectTasksCompletedAndFill(AT_LEAST_NUMBER_OF_LONG_TASKS)
+	longContent := ll.renderLongGrid(
+		longItems,
+		cStyle.MaxHeight(2).Height(1).MarginBottom(1).Width(((cWidth) * 2)), cWidth)
 
 	longTermSection := lipgloss.JoinVertical(
 		lipgloss.Center,

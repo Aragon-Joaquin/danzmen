@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"strings"
 
 	"charm.land/lipgloss/v2"
 )
@@ -19,7 +20,7 @@ type DZList interface {
 	SetHeight(h int)
 	SetWidth(w int)
 	SetSizes(w, h int)
-	View() string
+	// View() string
 }
 
 type listModel struct {
@@ -104,21 +105,25 @@ func (l *listModel) SetItem(idx int, item DZTask) bool {
 	return true
 }
 
-func (l *listModel) SetHeight(h int) {
-	l.h = h
-}
-func (l *listModel) SetWidth(w int) {
-	l.w = w
-}
+func (l *listModel) Counts() (int, int) { return l.countTotalAndCompletedTasks() }
+func (l *listModel) SetHeight(h int)    { l.h = h }
+func (l *listModel) SetWidth(w int)     { l.w = w }
 
 func (l *listModel) SetSizes(w, h int) {
 	l.SetWidth(w)
 	l.SetHeight(h)
 }
 
-func (l *listModel) Counts() (int, int) {
-	return l.countTotalAndCompletedTasks()
-}
+// func (m *listModel) View() string {
+// 	monthlyItems := m.selectTasksCompletedAndFill()
+// 	if len(monthlyItems) == 0 {
+// 		return ""
+// 	}
+//
+// 	cWidth := m.w / 2
+// 	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
+// 	return m.renderMonthlyGrid(monthlyItems, cell)
+// }
 
 // WARN: private
 func (l *listModel) incrementSelector() int {
@@ -135,53 +140,68 @@ func (l *listModel) decrementSelector() int {
 	return l.selectedId
 }
 
+const (
+	max_char_until_ellipsis = 22
+	MAX_PER_ROW             = 2
+)
+
+type AT_LEAST_NUMBER int
+
+const (
+	AT_LEAST_NUMBER_OF_MONTHLY_TASKS AT_LEAST_NUMBER = 8
+	AT_LEAST_NUMBER_OF_LONG_TASKS    AT_LEAST_NUMBER = 6
+)
+
 // grabs up to AT_LEAST_NUMBER_OF_MONTHLY_TASKS (8) at prioritizes the uncompleted first
 // IF the uncompleted tasks are equal to AT_LEAST_NUMBER_OF_MONTHLY_TASKS then it does nothing
 // IF the uncompleted tasks are less to AT_LEAST_NUMBER_OF_MONTHLY_TASKS but there's no more tasks, it does nothing
 // IF the uncompleted tasks are less AND there's more tasks, it just fills with whatever task there is
-func (l *listModel) selectMonthlyTasksCompletedAndFill() []listItem {
+func (l *listModel) selectTasksCompletedAndFill(at_least_tasks AT_LEAST_NUMBER) []listItem {
 	if len(l.items) == 0 {
 		return []listItem{}
 	}
 
-	var atleast_monthly = map[int]listItem{}
+	AT_LEAST := int(at_least_tasks)
+
+	var atleast = map[int]listItem{}
 	for _, v := range l.items {
 		if v.item.Completed() {
 			continue
 		}
-		atleast_monthly[v.item.ID()] = v
 
-		if len(atleast_monthly) == AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
+		atleast[v.item.ID()] = v
+
+		if len(atleast) == AT_LEAST {
 			break
 		}
 	}
 
-	if len(atleast_monthly) < AT_LEAST_NUMBER_OF_MONTHLY_TASKS && len(l.items) >= len(atleast_monthly) {
+	if len(atleast) < AT_LEAST && len(l.items) >= len(atleast) {
 		for _, v := range l.items {
-			_, ok := atleast_monthly[v.item.ID()]
+			_, ok := atleast[v.item.ID()]
 			if ok || !v.item.Completed() {
 				continue
 			}
-			atleast_monthly[v.item.ID()] = v
+			atleast[v.item.ID()] = v
 
-			if len(atleast_monthly) == AT_LEAST_NUMBER_OF_MONTHLY_TASKS {
+			if len(atleast) == AT_LEAST {
 				break
 			}
 
 		}
 	}
 
-	var arr_atleast_monthly = []listItem{}
-	for _, v := range atleast_monthly {
-		arr_atleast_monthly = append(arr_atleast_monthly, v)
+	var arr_atleast = []listItem{}
+	for _, v := range atleast {
+		arr_atleast = append(arr_atleast, v)
 	}
 
 	//i dont know if the slices.SortedFunc is what panics since it tries to access the second item?
-	if len(arr_atleast_monthly) < 2 {
-		return arr_atleast_monthly
+	if len(arr_atleast) < 2 {
+		return arr_atleast
 	}
 
-	return slices.SortedFunc(slices.Values(arr_atleast_monthly), func(li1, li2 listItem) int {
+	return slices.SortedFunc(slices.Values(arr_atleast), func(li1, li2 listItem) int {
 		if li1.item.Completed() != li2.item.Completed() {
 			if !li1.item.Completed() {
 				return -1
@@ -202,16 +222,12 @@ var (
 	)
 )
 
-const (
-	max_char_until_ellipsis = 22
-)
-
 var (
 	monthly_times_done = lipgloss.NewStyle().Foreground(lipgloss.BrightBlack)
 )
 
 // render the monthly tasks
-func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string {
+func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string {
 	if len(items) == 0 {
 		return figlet_art
 	}
@@ -256,17 +272,34 @@ func (_ *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 
 	}
 
-	var rows []string
-	for i := 0; i < len(renderedCells); i += MAX_PER_ROW {
-		end := min(i+MAX_PER_ROW, len(renderedCells))
-		rows = append(rows,
-			lipgloss.JoinHorizontal(
-				lipgloss.Top,
-				renderedCells[i:end]...,
-			),
+	return lipgloss.JoinVertical(lipgloss.Left, (l.arrange_cells_in_layout(renderedCells, MAX_PER_ROW))...)
+}
+
+func (_ *listModel) renderLongGrid(items []listItem, c lipgloss.Style, cWidth int) string {
+	var longRows []string
+	for _, li := range items {
+		lt, ok := li.item.(DZLongTask)
+		if !ok {
+			continue
+		}
+
+		icon := lt.ReturnCheckboxString()
+		row := c.Render(
+			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
+			lttTitle.Width(int(float64(cWidth)*1.3)).Render(lt.TitleEllipsis(max_char_until_ellipsis)),
+			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
+			lttEnds.Render(lt.HumanReadableEndsIn()),
 		)
+
+		longRows = append(longRows, row)
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, rows...)
+
+	longContent := strings.Join(longRows, "\n")
+	if longContent == "" {
+		longContent = lipgloss.NewStyle().Render(ltt_empty_task_placeholder)
+	}
+
+	return longContent
 }
 
 func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
@@ -282,18 +315,17 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 
 // func (l *listModel) SelectLLTNextToExpire(){}
 
-const (
-	AT_LEAST_NUMBER_OF_MONTHLY_TASKS = 8
-	MAX_PER_ROW                      = 2
-)
-
-func (m *listModel) View() string {
-	monthlyItems := m.selectMonthlyTasksCompletedAndFill()
-	if len(monthlyItems) == 0 {
-		return ""
+func (l *listModel) arrange_cells_in_layout(cells []string, MAX_PER_ROW int) []string {
+	rows := []string{}
+	for i := 0; i < len(cells); i += MAX_PER_ROW {
+		end := min(i+MAX_PER_ROW, len(cells))
+		rows = append(rows,
+			lipgloss.JoinHorizontal(
+				lipgloss.Top,
+				cells[i:end]...,
+			),
+		)
 	}
 
-	cWidth := m.w / 2
-	cell := cStyle.Width(cWidth).MaxWidth(cWidth)
-	return m.renderMonthlyGrid(monthlyItems, cell)
+	return rows
 }

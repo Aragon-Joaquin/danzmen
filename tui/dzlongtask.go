@@ -67,7 +67,7 @@ func (l *longTask) RenderPriority() string {
 func (l *longTask) PriorityBGColor() color.Color {
 	switch l.priority {
 	case ty.PRIO_LOW:
-		return lipgloss.BrightBlack
+		return lipgloss.Cyan
 	case ty.PRIO_MED:
 		return lipgloss.Yellow
 	case ty.PRIO_HIGH:

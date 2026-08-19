@@ -56,12 +56,13 @@ var (
 // 7d (day notation)
 func (l *LongTermTasksCfg) ValidateExpires_In() error {
 	e := l.Ends
-	t, err := time.Parse(e, string(MM_DD_YYYY))
+	t, err := time.Parse(string(MM_DD_YYYY), e)
+
 	now := time.Now()
 
 	//NOTE: if the datestamp format is valid:
 	if err == nil {
-		if t.Compare(now) != -1 {
+		if t.Compare(now) != 1 {
 			return fmt.Errorf("We're not in the past. Select a valid date that's %s or further. \n%s", now.Format(string(MM_DD_YYYY)), expiration_example_of_usage)
 		}
 

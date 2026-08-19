@@ -28,8 +28,8 @@ const (
 type DATE_FORMATS string
 
 const (
-	MM_DD_YYYY DATE_FORMATS = "01/02/2006" // <- only support this for now
-	//DD_MM_YYYY = "02/01/2006"
+	MM_DD_YYYY DATE_FORMATS = "1/2/2006" // <- only support this for now
+	//DD_MM_YYYY = "2/1/2006"
 )
 
 func GetDate(format DATE_FORMATS) string { return time.Now().Format(string(format)) }
