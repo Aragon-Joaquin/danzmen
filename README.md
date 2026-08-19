@@ -4,6 +4,10 @@
 ## danzmen
 more like a tui agenda using a .toml config file.
 
+
+[example_image](./.github/example.png)
+(the status logo comes from [ufetch](https://github.com/jschx/ufetch/blob/master/ufetch-void))
+
 the idea is:
 - when you open a terminal instead of opening your `riced fastfest with a pokemon`, or whatever bloat you use, it reminds you what monthly/longterm tasks you need to do.
 - the better solution would be using a list.todo.md with [checkmate.nvim](https://github.com/bngarren/checkmate.nvim) (not sponsored btw) & zk.org/neorg/obsidian but whatever fits your bloat
