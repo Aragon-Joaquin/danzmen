@@ -5,7 +5,7 @@
 more like a tui agenda using a .toml config file.
 
 
-[example_image](./.github/example.png)
+![example_image](./.github/example.png)
 (the status logo comes from [ufetch](https://github.com/jschx/ufetch/blob/master/ufetch-void))
 
 the idea is:
