@@ -13,5 +13,3 @@ func NewListFlag() FlagType {
 		p_opts: newProgramOpts(PROGRAM_LIST),
 	}
 }
-
-func (*ListFlag) UsageString() string { return "list\t\tOutput a simple screen of the tasks today" }

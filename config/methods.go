@@ -85,10 +85,5 @@ func (c *Cfg) getNonRepetableLongTermTasks() []ty.LongTermTasksCfg {
 	return m
 }
 
-func (c *Cfg) GetMonthlyTasks() []ty.MonthlyTasksCfg {
-	return c.monthParsed
-}
-
-func (c *Cfg) GetLongTermTasks() []ty.LongTermTasksCfg {
-	return c.longTermParsed
-}
+func (c *Cfg) GetMonthlyTasks() []ty.MonthlyTasksCfg   { return c.monthParsed }
+func (c *Cfg) GetLongTermTasks() []ty.LongTermTasksCfg { return c.longTermParsed }

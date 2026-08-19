@@ -5,8 +5,8 @@ import (
 	"danzmen/db"
 	"danzmen/flags"
 	"danzmen/tui"
+	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	xterm "github.com/charmbracelet/x/term"
@@ -14,6 +14,7 @@ import (
 
 func main() {
 	//NOTE: flag parsing
+	flag.Parse()
 	f, err := flags.ParseOptions()
 
 	if err != nil {
@@ -22,7 +23,7 @@ func main() {
 	}
 
 	if f.GetType() == flags.PROGRAM_HELP {
-		fmt.Println(f.UsageString())
+		f.(*flags.HelpFlag).PrintUsage()
 		return
 	}
 
@@ -57,14 +58,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	if f.GetType() == flags.PROGRAM_TOGGLE {
-		tf, ok := f.(*flags.ToggleFlag)
-		if !ok {
-			log.Fatalf("Type was Toggle flag but it cannot type cast to it")
-			return
+	switch f.GetType() {
+	case flags.PROGRAM_TOGGLE:
+		if err := f.(*flags.ToggleFlag).FlagToggle(sdb, monthlyDBTasks, ltt); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
 		}
-
-		if err := tf.FlagToggle(sdb, monthlyDBTasks, ltt); err != nil {
+		return
+	case flags.PROGRAM_ADD:
+		if err := f.(*flags.AddFlag).FlagAddQuantity(sdb); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}

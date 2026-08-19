@@ -5,6 +5,7 @@ const (
 	program_list_arg   = "list"
 	program_check_arg  = "check"
 	program_toggle_arg = "toggle"
+	program_add_arg    = "add"
 )
 
 type PROGRAM_OPTION int
@@ -14,13 +15,12 @@ const (
 	PROGRAM_LIST
 	PROGRAM_CHECK
 	PROGRAM_TOGGLE
+	PROGRAM_ADD
 )
 
 type FlagType interface {
 	GetType() PROGRAM_OPTION
 	GetArgs() []string
-
-	UsageString() string
 }
 
 type p_opts struct {

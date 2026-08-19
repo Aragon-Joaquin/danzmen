@@ -13,7 +13,3 @@ func NewCheckFlag() FlagType {
 		p_opts: newProgramOpts(PROGRAM_CHECK),
 	}
 }
-
-func (_ *CheckFlag) UsageString() string {
-	return "check\t\t(UNFINISHED) Enter in a tui to check on/off tasks"
-}

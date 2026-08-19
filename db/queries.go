@@ -78,7 +78,7 @@ func (s *SqliteDB) private_updateLogic(query string, mark_as_completed bool, arg
 		a = append(a, v)
 	}
 
-	_, err := s.db.ExecContext(context.Background(), query, args...)
+	_, err := s.db.ExecContext(context.Background(), query, a...)
 	return err
 }
 
@@ -95,6 +95,18 @@ func (s *SqliteDB) UpdateCompletedMonthlyTask(taskid int, mark_as_completed bool
 func (s *SqliteDB) UpdateCompletedLongTask(taskid int, mark_as_completed bool) error {
 	q := `update long_tasks set completed_at = ? where id = ?;`
 	return s.private_updateLogic(q, mark_as_completed, taskid)
+}
+
+func (s *SqliteDB) AddQuantityToMonthlyTask(taskid int, quantity float64) error {
+	q := `update monthly_tasks set times_done = coalesce(times_done, 0) + ? where id = ?;`
+	_, err := s.db.ExecContext(context.Background(), q, quantity, taskid)
+	return err
+}
+
+func (s *SqliteDB) AddQuantityToLongTask(taskid int, quantity float64) error {
+	q := `update long_tasks set times_done = coalesce(times_done, 0) + ? where id = ?;`
+	_, err := s.db.ExecContext(context.Background(), q, quantity, taskid)
+	return err
 }
 
 func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJoin_Monthly, error) {
