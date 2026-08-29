@@ -17,7 +17,7 @@ func NewAddFlag() (FlagType, error) {
 	af := flag.NewFlagSet(program_add_arg, flag.ExitOnError)
 	target_long := af.Bool("l", false, flag_modify_long_msg)
 
-	args, err := SetArgs(af, 1)
+	args, err := SetArgs(af, 2)
 	if err != nil {
 		return NewHelpFlag(), err
 	}

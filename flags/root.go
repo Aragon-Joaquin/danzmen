@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 )
 
 func ParseOptions() (FlagType, error) {
@@ -58,8 +59,30 @@ func SetArgs(f *flag.FlagSet, arguments_needed int) ([]string, error) {
 	// arg 1 = action (toggle/check/list...)
 	// arg 2 = id
 
-	if len(args) != arguments_needed {
-		return nil, fmt.Errorf("Argument's missing from flag.")
+	len_arg := len(args)
+	if len_arg != arguments_needed {
+		builder := strings.Builder{}
+		builder.WriteString("danzmen cmd [")
+
+		for idx := range max(len_arg, arguments_needed) {
+			if len_arg < arguments_needed && len_arg <= idx {
+				builder.WriteString(" ... ")
+				continue
+			}
+
+			if idx == arguments_needed {
+				builder.WriteString("]\n\t[ EXTRA ARGS -------> ")
+			}
+
+			arg := args[idx]
+			builder.WriteString(" ")
+			builder.WriteString(arg)
+			builder.WriteString(" ")
+			continue
+		}
+		builder.WriteString(" ]")
+		return nil, fmt.Errorf("Needed AT LEAST %d arguments and received %d:\t\n %s", arguments_needed, len(args), builder.String())
+
 	}
 
 	return args, nil
