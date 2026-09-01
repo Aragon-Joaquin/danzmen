@@ -2,18 +2,21 @@
 - [ ] IMPROVE ARCHITECTURE: @priority(HIGH)
     - [ ] implement flags as their own struct in a Value any/interface so then i can do type casting
     - [ ] improve the db queries holy, its a mess
-- [ ] testing @priority(high)
+    - [x] render.go
+- [ ] testing @priority(high) render.go
     - [ ] db
     - [ ] toml parsing
     - [ ] flags
 - [ ] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically @priority(high)
 - [ ] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
 - [ ] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)
+- [ ] reset task counter on a new month @priority(high)
 - [ ] cache the results to avoid making sql calls if the tasks dont change @priority(medium) 
 - [ ] implement `danzmen reset` to reset the db. @priority(medium) 
 - [ ] customize the float precision of the monthly_times_done @priority(medium)
 - [ ] make possible to add custom priority/metatags + colors @priority(medium)
 - [ ] make a notification of which tasks were pending last month @priority(medium)
+- [ ] make a size between SIZE_MEDIUM and SIZE_BIG and reorder the items to occupy more space @priority(medium)
 - [ ] make a streak popup. add a sql table called "monthly_progress" to store it. [x] on selectOrCreate query dont increment id if it failed silently @priority(low)
 - [ ] optimze db (create indexes) @priority(low)
 - [ ] make estimates on how many times needs to be done per week (+ make it an option) (└─>) @priority(low)
@@ -25,6 +28,7 @@
 
 ## Archive
 
+- [x] fields that are not readed (like [august.]) are logged as not valid fields @priority(high) 
 - [x] create the config.toml file with a bash script and ln -s to $HOME/desktop inside the Makefile @install flag
 - [?] orm??? or use a pattern to fix this mess lol @shelved(Reason: "bloat)
 - [x] sqlite

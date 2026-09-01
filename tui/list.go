@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -141,7 +142,7 @@ func (l *listModel) decrementSelector() int {
 }
 
 const (
-	max_char_until_ellipsis = 22
+	max_char_until_ellipsis = 30
 	MAX_PER_ROW             = 2
 )
 
@@ -231,7 +232,6 @@ func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 	if len(items) == 0 {
 		return figlet_art
 	}
-
 	var renderedCells []string
 	for _, i := range items {
 		idx_cmp := idx_box.Foreground(lipgloss.Yellow)
@@ -313,8 +313,6 @@ func (l *listModel) countTotalAndCompletedTasks() (total int, completed int) {
 	return len(l.items), completed
 }
 
-// func (l *listModel) SelectLLTNextToExpire(){}
-
 func (l *listModel) arrange_cells_in_layout(cells []string, MAX_PER_ROW int) []string {
 	rows := []string{}
 	for i := 0; i < len(cells); i += MAX_PER_ROW {
@@ -328,4 +326,39 @@ func (l *listModel) arrange_cells_in_layout(cells []string, MAX_PER_ROW int) []s
 	}
 
 	return rows
+}
+
+// find the task with the least days to be completed
+func (ll *listModel) findLongTaskNextToExpire() (selectedTask DZLongTask, days_diff int, placeholder string) {
+	var nearestDate time.Time
+	now := time.Now()
+
+	var ok bool = false
+	selectedTask = nil
+	days_diff = -1
+	placeholder = ltt_empty_task_placeholder
+
+	for _, li := range ll.items {
+		lt, k := li.item.(DZLongTask)
+		if !k {
+			continue
+		}
+
+		t, err := lt.MM_DD_YYYY_Format()
+		if err != nil {
+			continue
+		}
+
+		if t.After(now) && (nearestDate.IsZero() || t.Before(nearestDate)) {
+			selectedTask = lt
+			ok = true
+			days_diff = int(t.Sub(now).Hours() / 24)
+		}
+	}
+
+	if ok {
+		placeholder = fmt.Sprintf("Next LTT ends in: %dd", days_diff)
+	}
+
+	return
 }

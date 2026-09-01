@@ -68,14 +68,11 @@ func ParseTOML() (*Cfg, error) {
 	c.monthParsed = c.getNonRepeatableMonthlyTasks(&meta)
 	c.longTermParsed = c.getNonRepetableLongTermTasks()
 
-	for i, v := range meta.Undecoded() {
-		if i == 0 {
-			ty.TermSetColor(ty.Red)
-		}
-
+	ty.TermSetColor(ty.Red)
+	defer ty.TermResetColor()
+	for _, v := range meta.Undecoded() {
 		fmt.Printf("- UNKNOWN FIELD: %s\n", v.String())
 	}
-	ty.TermResetColor()
 
 	return c, nil
 }

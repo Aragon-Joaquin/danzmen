@@ -13,10 +13,6 @@ func (c *Cfg) getNonRepeatableMonthlyTasks(m *toml.MetaData) []ty.MonthlyTasksCf
 	mapNames := map[string]ty.MonthlyTasksCfg{}
 
 	for k, v := range c.Month {
-		if k != cMonth && k != ty.EVERY {
-			continue
-		}
-
 		for _, v := range v.Tasks {
 			var t ty.MonthlyTasksCfg
 			var name string
@@ -28,6 +24,11 @@ func (c *Cfg) getNonRepeatableMonthlyTasks(m *toml.MetaData) []ty.MonthlyTasksCf
 				}
 			} else if err := m.PrimitiveDecode(v, &t); err != nil {
 				log.Fatalln("Unrecognizable monthly task value: ", v)
+			}
+
+			//TODO: this adds overhead. Maybe delete?
+			if k != cMonth && k != ty.EVERY {
+				continue
 			}
 
 			if t.Name == "" {
