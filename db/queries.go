@@ -11,15 +11,15 @@ import (
 
 // NOTE: tables
 type DBMonthly_Task struct {
-	Id         int
-	Name       string
-	Times_Done sql.NullFloat64
+	Id   int
+	Name string
 }
 
 type DBMonthly_Record struct {
 	Year_MonthId int
 	MonthlyId    int
 	Completed_At sql.NullString
+	Times_Done   sql.NullFloat64
 }
 
 type DBJoin_Monthly struct {
@@ -98,7 +98,7 @@ func (s *SqliteDB) UpdateCompletedLongTask(taskid int, mark_as_completed bool) e
 }
 
 func (s *SqliteDB) AddQuantityToMonthlyTask(taskid int, quantity float64) error {
-	q := `update monthly_tasks set times_done = coalesce(times_done, 0) + ? where id = ?;`
+	q := `update monthly_record set times_done = coalesce(times_done, 0) + ? where monthly_id = ?;`
 	_, err := s.db.ExecContext(context.Background(), q, quantity, taskid)
 	return err
 }
@@ -157,9 +157,10 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 	//NOTE: SELECT QUERY
 	q3 := fmt.Sprintf(`
 	select 
-	t.id as t_id, t.name as t_name, t.times_done as t_times_done,
+	t.id as t_id, t.name as t_name,
 	ym.id as ym_id, ym.month_int as ym_month, ym.year as ym_year,
-	d.year_month as d_year_month, d.monthly_id as d_monthlyid, d.completed_at as d_completed
+	d.year_month as d_year_month, d.monthly_id as d_monthlyid, d.completed_at as d_completed,
+	d.times_done as d_times_done
 	from monthly_tasks t
 	left join monthly_record d on d.monthly_id = t.id and d.year_month = ?
 	left join year_month ym on d.year_month = ym.id
@@ -183,9 +184,9 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 		ym := &DBYear_Month{}
 
 		if err := r.Scan(
-			&dt.Id, &dt.Name, &dt.Times_Done,
+			&dt.Id, &dt.Name,
 			&ym.Id, &ym.Month, &ym.Year,
-			&dr.Year_MonthId, &dr.MonthlyId, &dr.Completed_At); err != nil {
+			&dr.Year_MonthId, &dr.MonthlyId, &dr.Completed_At, &dr.Times_Done); err != nil {
 			return nil, err
 		}
 

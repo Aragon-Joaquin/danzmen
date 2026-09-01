@@ -41,8 +41,7 @@ func (s *SqliteDB) createDatabase() error {
 	_, err := s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS monthly_tasks(
 		id integer PRIMARY KEY,
-		name text not null unique,
-		times_done real
+		name text not null unique
 	);
 
 	CREATE TABLE IF NOT EXISTS long_tasks(
@@ -65,6 +64,7 @@ func (s *SqliteDB) createDatabase() error {
 	CREATE TABLE IF NOT EXISTS monthly_record(
 		year_month integer not null,
 		monthly_id integer not null,
+		times_done real,
 
 		completed_at text null,
 

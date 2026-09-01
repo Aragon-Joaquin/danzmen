@@ -31,7 +31,7 @@ func CreateMultipleDZMonthlyTask(d ...*db.DBJoin_Monthly) []DZMonthlyTask {
 			task:             i,
 			metric:           v.Metric,
 			times_of_total:   v.Times,
-			current_progress: v.DBMonthly_Task.Times_Done.Float64,
+			current_progress: v.DBMonthly_Record.Times_Done.Float64,
 		})
 	}
 	return dzitem
