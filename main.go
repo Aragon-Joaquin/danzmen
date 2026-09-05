@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"danzmen/config"
 	"danzmen/db"
 	"danzmen/flags"
@@ -8,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	xterm "github.com/charmbracelet/x/term"
 )
@@ -41,26 +43,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	// fill up the values with db
-	monthlyDBTasks := []*db.DBJoin_Monthly{}
-	monthlyNames := cfg.GetMonthlyTasks()
-
-	if len(monthlyNames) > 0 {
-		if monthlyDBTasks, err = sdb.CreateIfNotExistsMonthlyTasks(monthlyNames); err != nil {
-			fmt.Println(err.Error())
-			os.Exit(1)
-		}
+	var page int64 = 1
+	if f, ok := f.(*flags.ListFlag); ok {
+		page = f.ReturnPage()
 	}
 
-	ltt, err := sdb.InsertOrSelectLongTermTasks(cfg.GetLongTermTasks())
+	// fill up the values with db
+	mt, ltt, err := query_both_tasks_from_db(sdb, cfg, page)
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("Couldn't query from the db %s\n", err.Error())
 		os.Exit(1)
 	}
 
 	switch f.GetType() {
 	case flags.PROGRAM_TOGGLE:
-		if err := f.(*flags.ToggleFlag).FlagToggle(sdb, monthlyDBTasks, ltt); err != nil {
+		if err := f.(*flags.ToggleFlag).FlagToggle(sdb, mt, ltt); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
@@ -73,18 +70,7 @@ func main() {
 		return
 	}
 
-	//create render-able objects
-	monthlyToRender := []tui.DZMonthlyTask{}
-	if len(monthlyDBTasks) > 0 {
-		for _, v := range tui.CreateMultipleDZMonthlyTask(monthlyDBTasks...) {
-			monthlyToRender = append(monthlyToRender, v)
-		}
-	}
-
-	longToRender := []tui.DZLongTask{}
-	for _, v := range tui.CreateMultipleDZLongTask(ltt...) {
-		longToRender = append(longToRender, v)
-	}
+	render_mt, render_ltt := format_both_tasks_for_render(mt, ltt)
 
 	//NOTE: start painting UI
 	if _, ok := f.(*flags.ListFlag); ok {
@@ -94,9 +80,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		s := tui.RenderList(monthlyToRender, longToRender, w, h)
-		c := tui.CONTAINER_FOR_TOGGLE
-		os.Stdout.WriteString(c.Render(s))
+		s := tui.RenderList(render_mt, render_ltt, w, h, sdb.GetDisplayData(context.Background(), time.Now()))
+		os.Stdout.WriteString(tui.CONTAINER_FOR_TOGGLE.Render(s))
 		return
 	}
 

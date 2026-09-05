@@ -2,10 +2,10 @@ package tui
 
 import (
 	"cmp"
+	ty "danzmen/types"
 	"fmt"
 	"slices"
 	"strings"
-	"time"
 
 	"charm.land/lipgloss/v2"
 )
@@ -141,23 +141,11 @@ func (l *listModel) decrementSelector() int {
 	return l.selectedId
 }
 
-const (
-	max_char_until_ellipsis = 30
-	MAX_PER_ROW             = 2
-)
-
-type AT_LEAST_NUMBER int
-
-const (
-	AT_LEAST_NUMBER_OF_MONTHLY_TASKS AT_LEAST_NUMBER = 8
-	AT_LEAST_NUMBER_OF_LONG_TASKS    AT_LEAST_NUMBER = 6
-)
-
 // grabs up to AT_LEAST_NUMBER_OF_MONTHLY_TASKS (8) at prioritizes the uncompleted first
 // IF the uncompleted tasks are equal to AT_LEAST_NUMBER_OF_MONTHLY_TASKS then it does nothing
 // IF the uncompleted tasks are less to AT_LEAST_NUMBER_OF_MONTHLY_TASKS but there's no more tasks, it does nothing
 // IF the uncompleted tasks are less AND there's more tasks, it just fills with whatever task there is
-func (l *listModel) selectTasksCompletedAndFill(at_least_tasks AT_LEAST_NUMBER) []listItem {
+func (l *listModel) selectTasksCompletedAndFill(at_least_tasks ty.AT_LEAST_NUMBER) []listItem {
 	if len(l.items) == 0 {
 		return []listItem{}
 	}
@@ -235,7 +223,7 @@ func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 	var renderedCells []string
 	for _, i := range items {
 		idx_cmp := idx_box.Foreground(lipgloss.Yellow)
-		title_cmp := lipgloss.NewStyle().Width(max_char_until_ellipsis)
+		title_cmp := lipgloss.NewStyle().Width(ty.MAX_CHAR_UNTIL_ELLIPSIS)
 
 		if i.item.Completed() {
 			idx_cmp = idx_cmp.Foreground(lipgloss.BrightBlack)
@@ -248,7 +236,7 @@ func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 				fmt.Sprintf("%s %d)",
 					i.item.ReturnCheckboxString(), i.item.ID()),
 			),
-			title_cmp.Strikethrough(i.item.Completed()).Render(i.item.TitleEllipsis(max_char_until_ellipsis)),
+			title_cmp.Strikethrough(i.item.Completed()).Render(i.item.TitleEllipsis(ty.MAX_CHAR_UNTIL_ELLIPSIS)),
 		)
 
 		if mTask, ok := i.item.(DZMonthlyTask); ok && mTask.TimesTotal() > 0 {
@@ -257,7 +245,7 @@ func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 					lipgloss.JoinVertical(
 						lipgloss.Center,
 						main_body,
-						monthly_times_done.MarginLeft(4).Width(max_char_until_ellipsis+4).Strikethrough(i.item.Completed()).Render(fmt.Sprintf(
+						monthly_times_done.MarginLeft(4).Width(ty.MAX_CHAR_UNTIL_ELLIPSIS+4).Strikethrough(i.item.Completed()).Render(fmt.Sprintf(
 							"└─>%2.f / %1.f%s", mTask.CurrentProgress(), mTask.TimesTotal(), mTask.Metric()),
 						),
 					),
@@ -272,7 +260,7 @@ func (l *listModel) renderMonthlyGrid(items []listItem, c lipgloss.Style) string
 
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, (l.arrange_cells_in_layout(renderedCells, MAX_PER_ROW))...)
+	return lipgloss.JoinVertical(lipgloss.Left, (l.arrange_cells_in_layout(renderedCells, ty.MAX_PER_ROW))...)
 }
 
 func (_ *listModel) renderLongGrid(items []listItem, c lipgloss.Style, cWidth int) string {
@@ -286,7 +274,7 @@ func (_ *listModel) renderLongGrid(items []listItem, c lipgloss.Style, cWidth in
 		icon := lt.ReturnCheckboxString()
 		row := c.Render(
 			lttidxbox.Render(fmt.Sprintf("%s %d)", icon, lt.ID())),
-			lttTitle.Width(int(float64(cWidth)*1.3)).Render(lt.TitleEllipsis(max_char_until_ellipsis)),
+			lttTitle.Width(int(float64(cWidth)*1.3)).Render(lt.TitleEllipsis(ty.MAX_CHAR_UNTIL_ELLIPSIS)),
 			lttPriority.Background(lt.PriorityBGColor()).Render(lt.RenderPriority()),
 			lttEnds.Render(lt.HumanReadableEndsIn()),
 		)
@@ -296,7 +284,12 @@ func (_ *listModel) renderLongGrid(items []listItem, c lipgloss.Style, cWidth in
 
 	longContent := strings.Join(longRows, "\n")
 	if longContent == "" {
-		longContent = lipgloss.NewStyle().Render(ltt_empty_task_placeholder)
+
+		longContent = lipgloss.JoinVertical(
+			lipgloss.Center,
+			lipgloss.NewStyle().Foreground(lipgloss.Red).Render(FLASH_FIGLET),
+			lipgloss.NewStyle().Margin(1, 0, 0, 0).Foreground(lipgloss.BrightBlack).Render("Nothing here yet"),
+		)
 	}
 
 	return longContent
@@ -328,37 +321,9 @@ func (l *listModel) arrange_cells_in_layout(cells []string, MAX_PER_ROW int) []s
 	return rows
 }
 
-// find the task with the least days to be completed
-func (ll *listModel) findLongTaskNextToExpire() (selectedTask DZLongTask, days_diff int, placeholder string) {
-	var nearestDate time.Time
-	now := time.Now()
-
-	var ok bool = false
-	selectedTask = nil
-	days_diff = -1
-	placeholder = ltt_empty_task_placeholder
-
-	for _, li := range ll.items {
-		lt, k := li.item.(DZLongTask)
-		if !k {
-			continue
-		}
-
-		t, err := lt.MM_DD_YYYY_Format()
-		if err != nil {
-			continue
-		}
-
-		if t.After(now) && (nearestDate.IsZero() || t.Before(nearestDate)) {
-			selectedTask = lt
-			ok = true
-			days_diff = int(t.Sub(now).Hours() / 24)
-		}
+func (l *listModel) nearest_task_placeholder(days int) (placeholder string) {
+	if days >= 0 {
+		return fmt.Sprintf("Next LTT ends in: %dd", days)
 	}
-
-	if ok {
-		placeholder = fmt.Sprintf("Next LTT ends in: %dd", days_diff)
-	}
-
-	return
+	return ltt_empty_task_placeholder
 }

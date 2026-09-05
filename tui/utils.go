@@ -1,6 +1,7 @@
 package tui
 
 import (
+	ty "danzmen/types"
 	"fmt"
 )
 
@@ -21,16 +22,15 @@ func TypeCastToListModel(longList DZList, monthlyList DZList) (ll *listModel, ml
 	return ll, ml, nil
 }
 
-func GenerateMonthlyText(ml *listModel) string {
-	total, completed := ml.countTotalAndCompletedTasks()
-	return fmt.Sprintf("Monthly tasks (%d/%d completed)", completed, total)
+func GenerateMonthlyText(ml *listModel, total int) string {
+	return fmt.Sprintf("Monthly tasks (%s/%d completed)", "fix", total)
 }
 
 // ok
 func RenderPlaceholderTextShowingRemainingTasksToRender(w int, len_monthly int) (r_tasks string) {
-	if len_monthly > int(AT_LEAST_NUMBER_OF_MONTHLY_TASKS) {
+	if len_monthly > int(ty.AT_LEAST_NUMBER_OF_MONTHLY_TASKS) {
 		r_tasks = remainingTasks.Width((w - 2) / 2).Render(
-			fmt.Sprintf("Show %d more tasks", len_monthly-int(AT_LEAST_NUMBER_OF_MONTHLY_TASKS)))
+			fmt.Sprintf("Show %d more tasks", len_monthly-int(ty.AT_LEAST_NUMBER_OF_MONTHLY_TASKS)))
 	}
 
 	return

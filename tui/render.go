@@ -1,6 +1,8 @@
 package tui
 
 import (
+	"danzmen/db"
+	ty "danzmen/types"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -58,23 +60,23 @@ var (
 			Border(lipgloss.RoundedBorder(), true, false, false, false).
 			BorderForeground(lipgloss.Yellow)
 
-	ltt_empty_task_placeholder = "Nothing to worry about"
+	ltt_empty_task_placeholder = "Nothing here !"
 )
 
-func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
-	ll, ml, err := TypeCastToListModel(longI, monthlyI)
-	if err != nil {
-		return err.Error()
-	}
-
+func RenderModelView(monthlyI DZList, longI DZList, w, h int, displayData *db.DisplayData) string {
 	half, opts := GetTypeOfSize(w)
 	//NOTE: nothing
 	if opts.typ == SIZE_SMALL {
 		return ""
 	}
 
-	monthlyItems := ml.selectTasksCompletedAndFill(AT_LEAST_NUMBER_OF_MONTHLY_TASKS)
-	monthlyText := GenerateMonthlyText(ml)
+	ll, ml, err := TypeCastToListModel(longI, monthlyI)
+	if err != nil {
+		return err.Error()
+	}
+
+	monthlyItems := ml.selectTasksCompletedAndFill(ty.AT_LEAST_NUMBER_OF_MONTHLY_TASKS)
+	monthlyText := GenerateMonthlyText(ml, displayData.CountMonthlyTasks)
 
 	cellsRendered := ml.renderMonthlyGrid(monthlyItems,
 		cStyle.Margin(0, 1).Width(opts.cellWidth).MaxWidth(opts.cellWidth))
@@ -84,7 +86,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		hasItemsPosition = lipgloss.Center
 	}
 
-	_, dd, nearest_task_placeholder := ll.findLongTaskNextToExpire()
+	nt_placeholder := ll.nearest_task_placeholder(displayData.NearestLongTaskToExpire)
 
 	switch opts.typ {
 	//NOTE: daily
@@ -96,7 +98,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 			lipgloss.JoinHorizontal(
 				hasItemsPosition,
 				monthlyTitleHalf.Width(opts.titlePadding).Render(monthlyText),
-				lttNotify.Width(opts.titlePadding).Render(nearest_task_placeholder),
+				lttNotify.Width(opts.titlePadding).Render(nt_placeholder),
 			),
 			borderBottom.Width(w-1).Render(),
 			cellsRendered,
@@ -117,7 +119,7 @@ func RenderModelView(monthlyI DZList, longI DZList, w, h int) string {
 		)
 
 		verticalBar := strings.TrimSuffix(strings.Repeat("│\n", 14), "\n")
-		longTermSection := opts.ReturnLongListRenderable(ll, dd)
+		longTermSection := opts.ReturnLongListRenderable(ll, displayData.NearestLongTaskToExpire)
 
 		return lipgloss.JoinHorizontal(
 			lipgloss.Left,

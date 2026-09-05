@@ -1,8 +1,10 @@
 package tui
 
 import (
+	"context"
 	"danzmen/db"
 	"log"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -14,6 +16,7 @@ type TuiModel struct {
 	h            int
 	monthly_list DZList
 	long_list    DZList
+	displayData  *db.DisplayData
 }
 
 const (
@@ -21,19 +24,20 @@ const (
 	LIST_HEIGHT   = 20
 )
 
-func RenderList(monthly []DZMonthlyTask, long []DZLongTask, w, h int) string {
+func RenderList(monthly []DZMonthlyTask, long []DZLongTask, w, h int, db *db.DisplayData) string {
 	monthly_list := CreateDZList(monthly, NewSimpleStyle(), w, h)
 	long_list := CreateDZLongList(long, NewSimpleStyle(), w, h)
-	return RenderModelView(monthly_list, long_list, w, h)
+	return RenderModelView(monthly_list, long_list, w, h, db)
 }
 
-func CreateTUIModel(monthly []DZMonthlyTask, long []DZLongTask, db *db.SqliteDB) TuiModel {
+func CreateTUIModel(monthly []DZMonthlyTask, long []DZLongTask, db *db.SqliteDB, dd *db.DisplayData) TuiModel {
 	mTui := TuiModel{
 		db:           db,
 		w:            DEFAULT_WIDTH,
 		h:            LIST_HEIGHT,
 		monthly_list: CreateDZList(monthly, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
 		long_list:    CreateDZLongList(long, NewSimpleStyle(), DEFAULT_WIDTH, LIST_HEIGHT),
+		displayData:  db.GetDisplayData(context.Background(), time.Now()),
 	}
 
 	return mTui
@@ -86,7 +90,7 @@ var (
 
 func (m TuiModel) View() tea.View {
 	v := tea.NewView(
-		c.Render(RenderModelView(m.monthly_list, m.long_list, m.w, m.h)))
+		c.Render(RenderModelView(m.monthly_list, m.long_list, m.w, m.h, &db.DisplayData{})))
 	v.AltScreen = true
 	return v
 }

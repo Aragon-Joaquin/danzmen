@@ -109,7 +109,7 @@ func (s *SqliteDB) AddQuantityToLongTask(taskid int, quantity float64) error {
 	return err
 }
 
-func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJoin_Monthly, error) {
+func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg, pageNumb int64) ([]*DBJoin_Monthly, error) {
 	ctx := context.Background()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
 	if err != nil {
@@ -164,7 +164,15 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 	from monthly_tasks t
 	left join monthly_record d on d.monthly_id = t.id and d.year_month = ?
 	left join year_month ym on d.year_month = ym.id
-	where t.name in (?%s) order by t.id asc;`, strings.Repeat(", ?", len(t)-1))
+	where t.name in (?%s) 
+	order by 
+		case when d.completed_at is null then 0 else 1 end,
+		t.id 
+	asc limit ? offset ?;`, strings.Repeat(", ?", len(t)-1))
+
+	//append limit + offset
+	offset := s.calculate_offset(pageNumb, ty.AT_LEAST_NUMBER_OF_MONTHLY_TASKS)
+	args = append(args, ty.AT_LEAST_NUMBER_OF_MONTHLY_TASKS, offset)
 
 	r, err := s.db.QueryContext(ctx, q3, args...)
 	if err != nil {
@@ -206,7 +214,7 @@ func (s *SqliteDB) CreateIfNotExistsMonthlyTasks(t []ty.MonthlyTasksCfg) ([]*DBJ
 	return res, nil
 }
 
-func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg) ([]*DBLong_Tasks, error) {
+func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg, pageNumb int64) ([]*DBLong_Tasks, error) {
 	if len(t) == 0 {
 		return nil, fmt.Errorf("Not enough long term tasks")
 	}
@@ -240,8 +248,12 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg) ([]*DBLo
 
 	//and select them
 	q2 := fmt.Sprintf(
-		`select id, name, expires_in, completed_at from long_tasks where name in (?%s)`,
+		`select id, name, expires_in, completed_at from long_tasks where name in (?%s) limit ? offset ?;`,
 		strings.Repeat(", ?", len(n)-1))
+
+	//append limit + offset
+	offset := s.calculate_offset(pageNumb, ty.AT_LEAST_NUMBER_OF_LONG_TASKS)
+	n = append(n, ty.AT_LEAST_NUMBER_OF_LONG_TASKS, offset)
 
 	r, err := s.db.QueryContext(ctx, q2, n...)
 	if err != nil {
@@ -272,4 +284,10 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg) ([]*DBLo
 	}
 
 	return DBTask, nil
+}
+
+// WARN: private
+func (s *SqliteDB) calculate_offset(pageNumb int64, numberTask ty.AT_LEAST_NUMBER) int64 {
+	n := max(pageNumb, 1)
+	return (n - 1) * int64(numberTask)
 }

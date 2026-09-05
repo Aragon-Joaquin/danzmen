@@ -1,6 +1,7 @@
 package tui
 
 import (
+	ty "danzmen/types"
 	"fmt"
 
 	"charm.land/lipgloss/v2"
@@ -52,7 +53,7 @@ func GetTypeOfSize(w int) (halfScreen int, opts *SizeOpts) {
 
 func (s *SizeOpts) ReturnLongListRenderable(ll *listModel, dd int) string {
 	longContent := ll.renderLongGrid(
-		ll.selectTasksCompletedAndFill(AT_LEAST_NUMBER_OF_LONG_TASKS),
+		ll.selectTasksCompletedAndFill(ty.AT_LEAST_NUMBER_OF_LONG_TASKS),
 		cStyle.MaxHeight(2).Height(1).MarginBottom(1).Width(((s.cellWidth) * 2)), s.cellWidth)
 
 	longTermSection := lipgloss.JoinVertical(

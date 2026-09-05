@@ -19,7 +19,7 @@ func ParseOptions() (FlagType, error) {
 		return NewHelpFlag(), nil
 
 	case program_list_arg:
-		return NewListFlag(), nil
+		return NewListFlag()
 
 	case program_check_arg:
 		return NewCheckFlag(), nil
