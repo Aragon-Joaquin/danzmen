@@ -1,5 +1,6 @@
 #### todo: 
-- [ ] IMPROVE ARCHITECTURE: @priority(HIGH)
+- [ ] On 8+ items, show remaining ones and implement `danzmen list 2` to show the second page. @priority(crucial)
+- [ ] IMPROVE ARCHITECTURE: @priority(high)
     - [ ] implement flags as their own struct in a Value any/interface so then i can do type casting
     - [ ] improve the db queries holy, its a mess
     - [x] render.go
@@ -9,7 +10,7 @@
     - [ ] flags
 - [ ] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically @priority(high)
 - [ ] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
-- [ ] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)
+- [ ] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)|
 - [ ] cache the results to avoid making sql calls if the tasks dont change @priority(medium) 
 - [ ] implement `danzmen reset` to reset the db. @priority(medium) 
 - [ ] customize the float precision of the monthly_times_done @priority(medium)
