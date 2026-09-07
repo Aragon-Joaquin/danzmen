@@ -1,5 +1,4 @@
 #### todo: 
-- [x] On 8+ items, show remaining ones and implement `danzmen list 2` to show the second page. @priority(crucial)
 - [ ] IMPROVE ARCHITECTURE: @priority(high)
     - [ ] implement flags as their own struct in a Value any/interface so then i can do type casting
     - [ ] improve the db queries holy, its a mess
@@ -9,8 +8,8 @@
     - [ ] toml parsing
     - [x] flags
 - [ ] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically @priority(high)
-- [x] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
 - [ ] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)|
+- [ ] when specifying `{ times = 1 }` dont render the `0 / 1 times` box @priority(medium) 
 - [ ] make `AT_LEAST_NUMBER_OF_MONTHLY_TASKS` and `AT_LEAST_NUMBER_OF_LONG_TASKS` be changed @priority(medium)
 - [ ] cache the results to avoid making sql calls if the tasks dont change @priority(medium) 
 - [ ] implement `danzmen reset` to reset the db. @priority(medium) 
@@ -30,6 +29,8 @@
 
 ## Archive
 
+- [x] On 8+ items, show remaining ones and implement `danzmen list 2` to show the second page. @priority(crucial)
+- [x] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
 - [x] reset task counter on a new month @priority(high)
 - [x] fields that are not readed (like [august.]) are logged as not valid fields @priority(high) 
 - [x] create the config.toml file with a bash script and ln -s to $HOME/desktop inside the Makefile @install flag
