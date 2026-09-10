@@ -13,7 +13,7 @@ func query_both_tasks_from_db(sdb *db.SqliteDB, cfg *config.Cfg, pageNumb int64)
 	monthlyNames := cfg.GetMonthlyTasks()
 
 	if len(monthlyNames) > 0 {
-		if mt, err = sdb.CreateIfNotExistsMonthlyTasks(monthlyNames, pageNumb); err != nil {
+		if mt, err = sdb.InsertOrSelectMonthlyTasks(monthlyNames, pageNumb); err != nil {
 			return nil, nil, err
 		}
 	}

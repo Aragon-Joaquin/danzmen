@@ -1,4 +1,14 @@
+
+
+
+
 #### todo: 
+
+**current:**
+- [ ] `danzmen add` should mark as complete the task if times_done > times and viceversa @priority(high)
+
+---
+
 - [ ] IMPROVE ARCHITECTURE: @priority(high)
     - [ ] implement flags as their own struct in a Value any/interface so then i can do type casting
     - [ ] improve the db queries holy, its a mess
@@ -6,10 +16,10 @@
 - [ ] testing @priority(high) render.go
     - [ ] db
     - [ ] toml parsing
-    - [x] flags
-- [ ] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically @priority(high)
-- [ ] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)|
+    - [ ] flags
+- [ ] make the `days remaining` have more precision. instead of `12d` make it `12d 66%` or similar @priority(medium)
 - [ ] when specifying `{ times = 1 }` dont render the `0 / 1 times` box @priority(medium) 
+- [ ] make the long term task have different styling on completion @priority(medium) 
 - [ ] make `AT_LEAST_NUMBER_OF_MONTHLY_TASKS` and `AT_LEAST_NUMBER_OF_LONG_TASKS` be changed @priority(medium)
 - [ ] cache the results to avoid making sql calls if the tasks dont change @priority(medium) 
 - [ ] implement `danzmen reset` to reset the db. @priority(medium) 
@@ -19,6 +29,7 @@
 - [ ] make a size between SIZE_MEDIUM and SIZE_BIG and reorder the items to occupy more space @priority(medium)
 - [ ] make a streak popup. add a sql table called "monthly_progress" to store it. [x] on selectOrCreate query dont increment id if it failed silently @priority(low)
 - [ ] optimze db (create indexes) @priority(low)
+- [ ] add `danzmen disable 4h` and doesn't print nothing for that amount of time @priority(low)
 - [ ] make estimates on how many times needs to be done per week (+ make it an option) (└─>) @priority(low)
 - [ ] make option to disable alerts about unrecognizable fields @priority(low)
 - [ ] finish "check" mode with: @priority(low)
@@ -29,6 +40,8 @@
 
 ## Archive
 
+- [x] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically (now you cannot untoggle it) @priority(high)
+- [x] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)
 - [x] On 8+ items, show remaining ones and implement `danzmen list 2` to show the second page. @priority(crucial)
 - [x] implement `danzmen add --monthly 1 +10`, `danzmen add --long 1 -4` @priority(high)
 - [x] reset task counter on a new month @priority(high)
@@ -66,7 +79,7 @@ Init() hardcodes a home-dir path — tests bypass it with an in-memory helper (s
 
 - TestCreateDatabase — Schema created; all 5 tables exist; re-running is idempotent.
 - TestInsertOrSelectYear_MonthID — Same month/year returns same id; different returns new.
-- TestCreateIfNotExistsMonthlyTasks — Inserts tasks + records, dedupes by name, returns full join with cfg.
+- TestInsertOrSelectMonthlyTasks — Inserts tasks + records, dedupes by name, returns full join with cfg.
 - TestUpdateCompletedMonthlyTask — Toggles completed 0↔1; only affects matching year_month + id.
 - TestUpdateCompletedLongTask — Same toggle behavior for long tasks path.
 - TestInsertOrSelectLongTermTasks — Inserts/dedupes long tasks, returns scan data + cfg; errors on empty input.
