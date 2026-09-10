@@ -49,6 +49,7 @@ func (s *SqliteDB) createDatabase() error {
 		name text not null unique,
     expires_in text default(strftime('%m/%d/%Y', 'now', '+7 days')),
 		times_done real,
+		times_required real not null default 1.0,
 		completed_at text null
 
 		-- priority text not null check(priority IN ('low', 'med', 'high')) default('med'),
@@ -65,6 +66,7 @@ func (s *SqliteDB) createDatabase() error {
 		year_month integer not null,
 		monthly_id integer not null,
 		times_done real,
+		times_required real not null default 1.0,
 
 		completed_at text null,
 

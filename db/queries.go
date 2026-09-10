@@ -52,10 +52,16 @@ func (s *SqliteDB) AddQuantityToMonthlyTask(taskid int, quantity float64) error 
 		return err
 	}
 
-	q := `update monthly_record 
-	set times_done = coalesce(times_done, 0) + ? 
-	where monthly_id = ? and year_month = ?;`
-	_, err = tx.ExecContext(context.Background(), q, quantity, taskid, id)
+	q := `update monthly_record set 
+    times_done = coalesce(times_done, 0) + ?,
+    completed_at = case
+        when (coalesce(times_done, 0) + ?) >= times_required then ? else null
+    end where monthly_id = ? and year_month = ?;`
+
+	_, err = tx.ExecContext(context.Background(), q, quantity, quantity, ty.GetDate(ty.MM_DD_YYYY), taskid, id)
+	if err != nil {
+		return err
+	}
 
 	if err := tx.Commit(); err != nil {
 		return err
@@ -64,8 +70,14 @@ func (s *SqliteDB) AddQuantityToMonthlyTask(taskid int, quantity float64) error 
 }
 
 func (s *SqliteDB) AddQuantityToLongTask(taskid int, quantity float64) error {
-	q := `update long_tasks set times_done = coalesce(times_done, 0) + ? where  `
-	_, err := s.db.ExecContext(context.Background(), q, quantity, taskid)
+	//TODO: this sums times_done twice
+	q := `update long_tasks set 
+    times_done = coalesce(times_done, 0) + ?,
+    completed_at = case
+        when (coalesce(times_done, 0) + ?) >= times_required then ? else null
+    end where id = ?;`
+
+	_, err := s.db.ExecContext(context.Background(), q, quantity, quantity, ty.GetDate(ty.MM_DD_YYYY), taskid)
 	return err
 }
 

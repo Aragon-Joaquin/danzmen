@@ -11,10 +11,11 @@ type DBMonthly_Task struct {
 }
 
 type DBMonthly_Record struct {
-	Year_MonthId int
-	MonthlyId    int
-	Completed_At sql.NullString
-	Times_Done   sql.NullFloat64
+	Year_MonthId   int
+	MonthlyId      int
+	Completed_At   sql.NullString
+	Times_Done     sql.NullFloat64
+	Times_Required float64
 }
 
 type DBJoin_Monthly struct {
@@ -26,11 +27,12 @@ type DBJoin_Monthly struct {
 }
 
 type DBLong_Tasks struct {
-	Id           int
-	Name         string
-	Expires_in   sql.NullString
-	Times_Done   sql.NullFloat64
-	Completed_At sql.NullString
+	Id             int
+	Name           string
+	Expires_in     sql.NullString
+	Times_Done     sql.NullFloat64
+	Times_Required float64
+	Completed_At   sql.NullString
 
 	ty.LongTermTasksCfg
 }

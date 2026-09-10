@@ -5,7 +5,6 @@
 #### todo: 
 
 **current:**
-- [ ] `danzmen add` should mark as complete the task if times_done > times and viceversa @priority(high)
 
 ---
 
@@ -17,6 +16,8 @@
     - [ ] db
     - [ ] toml parsing
     - [ ] flags
+
+- [ ] be able to import/export data with `danzmen export` & `danzmen import <file>` (this is too hard) @priority(high)
 - [ ] make the `days remaining` have more precision. instead of `12d` make it `12d 66%` or similar @priority(medium)
 - [ ] when specifying `{ times = 1 }` dont render the `0 / 1 times` box @priority(medium) 
 - [ ] make the long term task have different styling on completion @priority(medium) 
@@ -40,6 +41,7 @@
 
 ## Archive
 
+- [x] `danzmen add` should mark as complete the task if times_done >= times and viceversa @priority(high)
 - [x] separate `danzmen toggle --monthly 1` and `danzmen toggle --long 1`, `danzmen toggle 1` appends the --monthly flag automatically (now you cannot untoggle it) @priority(high)
 - [x] when `danzmen add` or `danzmen toggle`. check if the task is in todays month, if not, dont execute the query and throw an error @priority(high)
 - [x] On 8+ items, show remaining ones and implement `danzmen list 2` to show the second page. @priority(crucial)

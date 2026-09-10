@@ -22,14 +22,18 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg, pageNumb
 
 	defer tx.Rollback()
 
-	//then insert. ignore if they're dups.
-	q1 := `insert or ignore into long_tasks(name, expires_in) values(?, ?);`
+	//then insert. update it if dup.
+	//q1 := `insert or ignore into long_tasks(name, expires_in) values(?, ?);`
+	q1 := `insert into long_tasks (name, expires_in, times_required) values (?, ?, ?)
+					on conflict (name) do update set 
+					times_required = excluded.times_required, 
+					expires_in = excluded.expires_in;`
 
 	cfgMap := make(map[string]ty.LongTermTasksCfg, len(t))
 	n := []any{}
 
 	for _, l := range t {
-		if _, err = tx.ExecContext(ctx, q1, l.Name, l.MM_DD_YYYY_DATE); err != nil {
+		if _, err = tx.ExecContext(ctx, q1, l.Name, l.MM_DD_YYYY_DATE, l.Times); err != nil {
 			return nil, err
 		}
 
@@ -43,7 +47,7 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg, pageNumb
 
 	//and select them
 	q2 := fmt.Sprintf(
-		`select id, name, expires_in, completed_at from long_tasks where name in (?%s) limit ? offset ?;`,
+		`select id, name, expires_in, completed_at, times_done, times_required from long_tasks where name in (?%s) limit ? offset ?;`,
 		strings.Repeat(", ?", len(n)-1))
 
 	//append limit + offset
@@ -65,7 +69,9 @@ func (s *SqliteDB) InsertOrSelectLongTermTasks(t []ty.LongTermTasksCfg, pageNumb
 
 		t := DBLong_Tasks{}
 
-		if err := r.Scan(&t.Id, &t.Name, &t.Expires_in, &t.Completed_At); err != nil {
+		if err := r.Scan(
+			&t.Id, &t.Name, &t.Expires_in, &t.Completed_At,
+			&t.Times_Done, &t.Times_Required); err != nil {
 			return nil, err
 		}
 
@@ -95,11 +101,14 @@ func (s *SqliteDB) InsertOrSelectMonthlyTasks(t []ty.MonthlyTasksCfg, pageNumb i
 	// select the the values
 	// insert them into monthly_record
 	q1 := `insert into monthly_tasks(name) values(?) 
-	       on conflict(name) do update set name=name 
+	       on conflict(name) do update set name=name
 	       returning id;`
-	q2 := `insert or ignore into monthly_record(monthly_id, year_month) values(?, ?);`
+	//	q2 := `insert or ignore into monthly_record(monthly_id, year_month) values(?, ?) on conflict times_required = ? ;`
 
-	ym_id, err := s.insertOrSelectYear_MonthID(time.Now())
+	q2 := `insert into monthly_record (monthly_id, year_month, times_required) values (?, ?, ?)
+					on conflict (year_month, monthly_id) do update set times_required = excluded.times_required;`
+
+	ym_id, err := s.insertOrSelectYear_MonthID(ctx, tx, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +126,7 @@ func (s *SqliteDB) InsertOrSelectMonthlyTasks(t []ty.MonthlyTasksCfg, pageNumb i
 			return nil, err
 		}
 
-		_, _ = tx.ExecContext(ctx, q2, t_id, ym_id)
+		_, _ = tx.ExecContext(ctx, q2, t_id, ym_id, mcfg.Times)
 		args = append(args, mcfg.Name) // so we save one more iteration
 	}
 
@@ -132,7 +141,7 @@ func (s *SqliteDB) InsertOrSelectMonthlyTasks(t []ty.MonthlyTasksCfg, pageNumb i
 	t.id as t_id, t.name as t_name,
 	ym.id as ym_id, ym.month_int as ym_month, ym.year as ym_year,
 	d.year_month as d_year_month, d.monthly_id as d_monthlyid, d.completed_at as d_completed,
-	d.times_done as d_times_done
+	d.times_done as d_times_done, d.times_required as d_times_required
 	from monthly_tasks t
 	left join monthly_record d on d.monthly_id = t.id and d.year_month = ?
 	left join year_month ym on d.year_month = ym.id
@@ -166,7 +175,7 @@ func (s *SqliteDB) InsertOrSelectMonthlyTasks(t []ty.MonthlyTasksCfg, pageNumb i
 		if err := r.Scan(
 			&dt.Id, &dt.Name,
 			&ym.Id, &ym.Month, &ym.Year,
-			&dr.Year_MonthId, &dr.MonthlyId, &dr.Completed_At, &dr.Times_Done); err != nil {
+			&dr.Year_MonthId, &dr.MonthlyId, &dr.Completed_At, &dr.Times_Done, &dr.Times_Required); err != nil {
 			return nil, err
 		}
 
@@ -192,9 +201,7 @@ func (s *SqliteDB) calculate_offset(pageNumb int64, numberTask ty.AT_LEAST_NUMBE
 	return (n - 1) * int64(numberTask)
 }
 
-func (s *SqliteDB) insertOrSelectYear_MonthID(date time.Time) (int, error) {
-	ctx := context.Background()
-
+func (s *SqliteDB) insertOrSelectYear_MonthID(ctx context.Context, tx *sql.Tx, date time.Time) (int, error) {
 	q := `
 		insert into year_month (month_int, year) 
 		values (?, ?) 
@@ -204,7 +211,7 @@ func (s *SqliteDB) insertOrSelectYear_MonthID(date time.Time) (int, error) {
 	`
 
 	var id int
-	err := s.db.QueryRowContext(ctx, q, int(date.Month()), date.Year()).Scan(&id)
+	err := tx.QueryRowContext(ctx, q, int(date.Month()), date.Year()).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

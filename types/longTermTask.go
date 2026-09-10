@@ -21,6 +21,9 @@ type LongTermTasksCfg struct {
 	Name     string         `toml:"name"`
 	Priority PRIORITY_TYPES `toml:"priority"`
 
+	Times  float64 `toml:"times"`
+	Metric string  `toml:"metric"`
+
 	//custom
 	MM_DD_YYYY_DATE string
 }
